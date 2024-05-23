@@ -1,6 +1,6 @@
 python -m venv venv
 
-env\Scripts\activate
+venv\Scripts\activate
 
 pip freeze > requirements.txt
 

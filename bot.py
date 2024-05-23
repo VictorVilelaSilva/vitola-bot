@@ -96,6 +96,9 @@ def run_discord_bot():
         if username == 'chaul0205':
             await message.add_reaction('<:Chaul:1243037858907029534>')
         
+        if username == 'brunodss':
+            await message.reply('Você é PUTA RAPAZ!')
+        
         await client.process_commands(message)
             # await send_message(message, f'{message.author.mention} <:astral:858408913317134336>', False)
         #     for voice_channel in message.guild.voice_channels:
