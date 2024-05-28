@@ -1,15 +1,19 @@
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import responses
+import comandsFunctions
 import asyncio
 import os
+from datetime import timedelta
 
-async def send_message(message, return_message, is_private):
-    try:
-        await message.channel.send(return_message) if is_private else await message.channel.send(return_message)
-    except Exception as e:
-        print(e)
+
+async def send_message_to_chat(client, message):
+    # Obter o objeto channel
+    channel = client.get_channel('576190309688672257')
+
+    # Enviar a mensagem
+    await channel.send(message)
+
 
 
 def run_discord_bot():
@@ -17,12 +21,12 @@ def run_discord_bot():
     TOKEN = os.getenv('DISCORD_TOKEN')
 
     if TOKEN is None:
-        print("Please set the DISCORD_TOKEN environment variable.")
+        print("Insira o DISCORD_TOKEN no arquivo .env")
         exit(1)
     intents = discord.Intents.default()
     intents.message_content = True
     
-    PREFIX = '!meuBot'
+    PREFIX = '!'
     # client = discord.Client(intents=intents)
     client = commands.Bot(command_prefix = PREFIX, intents=intents)
 
@@ -30,54 +34,100 @@ def run_discord_bot():
     async def on_ready():
         print(f'Estrou on the line {client.user}')
     
-    @client.command()
-    async def ping(ctx):
-        print('Ping command triggered')
-        await ctx.send("Pong!")
+    @client.event
+    async def on_voice_state_update(member, before, after):
+        if before.channel is None and after.channel is not None:
+            if member.name == 'humberto_cunha':
+                channel = after.channel
+                vc = await channel.connect()
+                file_path = 'audios/lobinho.mp3'
+
+                if not os.path.isfile(file_path):
+                    await send_message_to_chat(client, "Arquivo não encontrado!")
+                    await vc.disconnect()
+                    return
+                
+                vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
+
+                while vc.is_playing():
+
+                    await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
+
+                await vc.disconnect()
+
+            else:
+                await send_message_to_chat("Você precisa estar em um canal de voz para usar esse comando.")
+                    
+            print(f'{member.name} se conectou ao canal de voz: {after.channel.name}')
     
     @client.command()
     async def chato(ctx):
-        print('Chato command entered')
-        # Check if the command was used in a guild
         if ctx.guild is None:
-            await ctx.send("This command can only be used in a server.")
+            await ctx.send("Esse comando só pode ser usado em servidores.")
             return
 
-        # Check if the user has the necessary permissions to kick members
-        if not ctx.author.guild_permissions.kick_members:
-            await ctx.send("You don't have permission to kick members.")
+        # Verifica se o autor da mensagem tem permissão para mover membros
+        if not ctx.author.guild_permissions.move_members:
+            await ctx.send("Voce não tem permissão para usar esse comando.")
             return
 
-        # Get the mentioned user
+        # Pegar o primeiro membro mencionado na mensagem
         if len(ctx.message.mentions) == 0:
-            await ctx.send("Please mention a user to kick.")
+            await ctx.send("Mencione um usuário para ser chutado.")
             return
         user = ctx.message.mentions[0]
 
-        # Start the vote
-        await ctx.send(f"Voting to kick {user.mention} has started. React with 👍 to vote.")
+        # Inicia a votação
+        await ctx.send(f"Vote no membro {user.mention} para ser chutado. Reaja com 👍 para votar.")
 
-        # Add reactions for voting
+        # adicion uma reção na mensagem digita da pelo bot
         await ctx.message.add_reaction("👍")
 
-        # Define the check function for the reaction event
+        # verifica se a reação é correta
         def check(reaction, user):
             return str(reaction.emoji) == "👍" and reaction.message == ctx.message
 
-        # Wait for reactions
+        # Espera por reações por 60 segundos
         try:
             reaction, _ = await client.wait_for("reaction_add", timeout=60.0, check=check)
         except asyncio.TimeoutError:
-            await ctx.send("Voting has ended. Not enough votes to kick.")
+            await ctx.send("Votação encerrada. Não houve votos suficientes para chutar.")
             return
 
         # Check if there are enough votes to kick
-        if reaction.count > 1:
-            # Kick the user
-            await user.kick(reason="Voted out")
-            await ctx.send(f"{user.mention} has been kicked.")
+        if reaction.count > 2:
+            # Move o usuario marcado para para fora do nacal de voz
+            member = ctx.guild.get_member(user.id)
+            await member.move_to(None)
         else:
-            await ctx.send("Voting has ended. Not enough votes to kick.")
+            await ctx.send("Não houve votos dropar do canal")
+    
+    @client.command()
+    async def tocar(ctx):
+        #entra no canal de voz e toca uma audio
+        channel = ctx.author.voice.channel
+        if channel is not None:
+
+            vc = await channel.connect()
+            file_path = 'audios/lobinho.mp3'
+
+            if not os.path.isfile(file_path):
+
+                await ctx.send("Arquivo não encontrado!")
+                await vc.disconnect()
+                return
+            
+            vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
+
+            while vc.is_playing():
+
+                await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
+
+            await vc.disconnect()
+
+        else:
+            await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
+
 
     @client.event
     async def on_message(message):
