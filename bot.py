@@ -6,7 +6,6 @@ import asyncio
 import os
 from datetime import timedelta
 
-
 async def send_message_to_chat(client, message):
     # Obter o objeto channel
     channel = client.get_channel('576190309688672257')
@@ -36,29 +35,31 @@ def run_discord_bot():
     
     @client.event
     async def on_voice_state_update(member, before, after):
+        # Verifica se alguém entrou no canal de voz
         if before.channel is None and after.channel is not None:
             if member.name == 'humberto_cunha':
+                # Pega a refeencia do canal de voz
                 channel = after.channel
+                # Entra no canal de voz
                 vc = await channel.connect()
                 file_path = 'audios/lobinho.mp3'
-
+                # Verifica se o arquivo existe
                 if not os.path.isfile(file_path):
                     await send_message_to_chat(client, "Arquivo não encontrado!")
                     await vc.disconnect()
                     return
-                
+                # Toca o arquivo de audio
                 vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
-
+                # Espera o audio terminar de tocar
                 while vc.is_playing():
 
                     await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
-
+                # Desconecta do canal de voz
                 await vc.disconnect()
 
             else:
                 await send_message_to_chat("Você precisa estar em um canal de voz para usar esse comando.")
                     
-            print(f'{member.name} se conectou ao canal de voz: {after.channel.name}')
     
     @client.command()
     async def chato(ctx):
@@ -78,7 +79,29 @@ def run_discord_bot():
         user = ctx.message.mentions[0]
 
         # Inicia a votação
-        await ctx.send(f"Vote no membro {user.mention} para ser chutado. Reaja com 👍 para votar.")
+        vote_message = await ctx.send(f"Vote no membro {user.mention} para ser chutado. Reaja com 👍 nessa mensagem para kickar ele da call.")
+
+        # adiciona uma reação na mensagem digitada pelo bot
+        await vote_message.add_reaction("👍")
+
+        # verifica se a reação é correta
+        def check(reaction, user):
+            return str(reaction.emoji) == "👍" and reaction.message == vote_message
+
+        # Espera por reações por 60 segundos
+        try:
+            reaction, _ = await client.wait_for("reaction_add", timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send("Votação encerrada. Não houve votos suficientes para chutar.")
+            return
+
+        # Verifica se há votos suficientes para chutar
+        if reaction.count > 2:
+            # Move o usuário marcado para fora do canal de voz
+            member = ctx.guild.get_member(user.id)
+            await member.move_to(None)
+        else:
+            await ctx.send("Não houve votos suficientes para chutar.")
 
         # adicion uma reção na mensagem digita da pelo bot
         await ctx.message.add_reaction("👍")
@@ -94,7 +117,7 @@ def run_discord_bot():
             await ctx.send("Votação encerrada. Não houve votos suficientes para chutar.")
             return
 
-        # Check if there are enough votes to kick
+        # Verifica se há votos suficientes para chutar
         if reaction.count > 2:
             # Move o usuario marcado para para fora do nacal de voz
             member = ctx.guild.get_member(user.id)
