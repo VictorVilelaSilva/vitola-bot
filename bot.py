@@ -57,8 +57,6 @@ def run_discord_bot():
                 # Desconecta do canal de voz
                 await vc.disconnect()
 
-            else:
-                await send_message_to_chat("Você precisa estar em um canal de voz para usar esse comando.")
                     
     
     @client.command()
