@@ -60,68 +60,52 @@ def run_discord_bot():
                     
     
     @client.command()
-    async def chato(ctx):
-        if ctx.guild is None:
-            await ctx.send("Esse comando só pode ser usado em servidores.")
+    async def chato(ctx, member: discord.Member):
+        if member.voice is None:
+            await ctx.send(f"{member.name} não está em uma call.")
             return
-
-        # Verifica se o autor da mensagem tem permissão para mover membros
-        if not ctx.author.guild_permissions.move_members:
-            await ctx.send("Voce não tem permissão para usar esse comando.")
-            return
-
-        # Pegar o primeiro membro mencionado na mensagem
-        if len(ctx.message.mentions) == 0:
-            await ctx.send("Mencione um usuário para ser chutado.")
-            return
-        user = ctx.message.mentions[0]
-
+    
         # Inicia a votação
-        vote_message = await ctx.send(f"Vote no membro {user.mention} para ser chutado. Reaja com 👍 nessa mensagem para kickar ele da call.")
+        await ctx.send(f"Vote no membro {member.name} para ser expulso da call. Reaja com 👍 para tirar ele da call ou com 👎 para não retirar ele da call")
+        
+        # Envia a mensagem de votação
+        votacao_msg = await ctx.send("Vote agora aqui !")
+        await votacao_msg.add_reaction("👍")
+        await votacao_msg.add_reaction("👎")
 
-        # adiciona uma reação na mensagem digitada pelo bot
-        await vote_message.add_reaction("👍")
+        # Tempo de votação (em segundos)
+        tempo_votacao = 6
+        
+        await asyncio.sleep(tempo_votacao)
 
-        # verifica se a reação é correta
-        def check(reaction, user):
-            return str(reaction.emoji) == "👍" and reaction.message == vote_message
+        await ctx.send("Votação encerrada!")
 
-        # Espera por reações por 60 segundos
-        try:
-            reaction, _ = await client.wait_for("reaction_add", timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            await ctx.send("Votação encerrada. Não houve votos suficientes para chutar.")
-            return
-
-        # Verifica se há votos suficientes para chutar
-        if reaction.count > 2:
-            # Move o usuário marcado para fora do canal de voz
-            member = ctx.guild.get_member(user.id)
-            await member.move_to(None)
+        # Atualiza a mensagem para obter as reações mais recentes
+        votacao_msg = await ctx.fetch_message(votacao_msg.id)
+        
+        # Conta as reações
+        reacoes = votacao_msg.reactions
+        votos_positivos = 0
+        votos_negativos = 0
+        
+        for reacao in reacoes:
+            if reacao.emoji == "👍":
+                votos_positivos = reacao.count - 1  # Subtrai 1 para não contar o voto do próprio bot
+            elif reacao.emoji == "👎":
+                votos_negativos = reacao.count - 1  # Subtrai 1 para não contar o voto do próprio bot
+        
+        # Determina o resultado da votação
+        if votos_positivos > votos_negativos:
+            # Tenta mover o usuário para outro canal ou desconectá-lo
+            try:
+                await member.move_to(None)
+                await ctx.send(f"{member.name} foi removido da call com {votos_positivos} votos a favor e {votos_negativos} votos contra.")
+            except Exception as e:
+                await ctx.send(f"Não foi possível remover {member.name} da call. Erro: {e}")
         else:
-            await ctx.send("Não houve votos suficientes para chutar.")
+            await ctx.send(f"{member.name} permanecerá na call. Votos a favor: {votos_positivos}, votos contra: {votos_negativos}")
 
-        # adicion uma reção na mensagem digita da pelo bot
-        await ctx.message.add_reaction("👍")
-
-        # verifica se a reação é correta
-        def check(reaction, user):
-            return str(reaction.emoji) == "👍" and reaction.message == ctx.message
-
-        # Espera por reações por 60 segundos
-        try:
-            reaction, _ = await client.wait_for("reaction_add", timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            await ctx.send("Votação encerrada. Não houve votos suficientes para chutar.")
-            return
-
-        # Verifica se há votos suficientes para chutar
-        if reaction.count > 2:
-            # Move o usuario marcado para para fora do nacal de voz
-            member = ctx.guild.get_member(user.id)
-            await member.move_to(None)
-        else:
-            await ctx.send("Não houve votos dropar do canal")
+            
     
     @client.command()
     async def tocar(ctx):
