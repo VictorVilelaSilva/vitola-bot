@@ -1,3 +1,15 @@
+## Dependencies before using
+
+### Windows
+
+Download and install [FFmpeg](https://ffmpeg.org/download.html).
+
+### Ubuntu
+
+```bash
+sudo apt update && sudo apt upgrade -y && sudo apt install ffmpeg -y
+```
+
 ## Create a virtual environment
 
 ```bash
