@@ -89,9 +89,9 @@ def run_discord_bot():
 
         for reacao in reacoes:
             if reacao.emoji == "👍":
-                votos_positivos = reacao.count - 1  # Subtrai 1 para não contar o voto do próprio bot
+                votos_positivos = reacao.count
             elif reacao.emoji == "👎":
-                votos_negativos = reacao.count - 1  # Subtrai 1 para não contar o voto do próprio bot
+                votos_negativos = reacao.count
 
         # Determina o resultado da votação
         if votos_positivos > votos_negativos:
