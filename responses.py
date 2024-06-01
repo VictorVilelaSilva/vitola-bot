@@ -5,8 +5,6 @@ def handle_response(message)->str:
 
     if p_message == "oi":
         return "Do neida?"
-    
+
     if p_message == "dota ou lol?":
         return "Dota é melhor"
-    
-    
