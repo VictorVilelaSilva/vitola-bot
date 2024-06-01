@@ -1,24 +1,23 @@
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 import comandsFunctions
 import asyncio
 import os
 from datetime import timedelta
 
-is_executing_command = False
+is_executing_command: bool = False
+TOKEN: str = os.getenv('DISCORD_TOKEN')
+CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
 
 async def send_message_to_chat(client, message):
     # Obter o objeto channel
-    channel = client.get_channel('576190309688672257')
+    channel = client.get_channel(CHANNEL_TOKEN)
 
     # Enviar a mensagem
     await channel.send(message)
 
 
 def run_discord_bot():
-    load_dotenv()
-    TOKEN: str = os.getenv('DISCORD_TOKEN')
     if TOKEN is None:
         print("Insira o DISCORD_TOKEN no arquivo .env")
         exit(1)
