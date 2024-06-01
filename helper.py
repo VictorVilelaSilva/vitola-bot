@@ -1,7 +1,7 @@
 import os
 from pytube import YouTube
 
-def dowloadVideo(link):
+def download_video(link):
     try: 
         yt = YouTube(link)
         dest_dir = 'audios/'
