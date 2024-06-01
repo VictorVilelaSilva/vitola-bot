@@ -6,6 +6,8 @@ import asyncio
 import os
 from datetime import timedelta
 
+is_executing_command = False
+
 async def send_message_to_chat(client, message):
     # Obter o objeto channel
     channel = client.get_channel('576190309688672257')
@@ -35,8 +37,12 @@ def run_discord_bot():
     
     @client.event
     async def on_voice_state_update(member, before, after):
+        global is_executing_command
+        if is_executing_command:
+            return
         # Verifica se alguém entrou no canal de voz
         if before.channel is None and after.channel is not None:
+            
             if member.name == 'humberto_cunha':
                 # Pega a refeencia do canal de voz
                 channel = after.channel
@@ -109,6 +115,12 @@ def run_discord_bot():
     
     @client.command()
     async def tocar(ctx):
+        global is_executing_command
+
+        if is_executing_command:
+            await ctx.send("Já estou tocando um áudio!")
+            return
+        is_executing_command = True
         #entra no canal de voz e toca uma audio
         channel = ctx.author.voice.channel
         if channel is not None:
@@ -132,6 +144,73 @@ def run_discord_bot():
 
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
+        
+    @client.command()
+    async def silence(ctx):
+        global is_executing_command
+
+        if is_executing_command:
+            await ctx.send("Já estou tocando um áudio!")
+            return
+        
+        is_executing_command = True
+
+        channel = ctx.author.voice.channel
+
+        if channel is not None:
+
+            vc = await channel.connect()
+            file_path = 'audios/silencer.mp3'
+
+            if not os.path.isfile(file_path):
+
+                await ctx.send("Arquivo não encontrado!")
+                await vc.disconnect()
+                return
+            
+            vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
+
+            for member in channel.members:
+                if member != client.user: 
+                    await member.edit(mute=True)
+
+            while vc.is_playing():
+
+                await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
+
+            await vc.disconnect()
+
+            for member in channel.members:
+                await member.edit(mute=False)
+
+
+    @client.command()
+    async def youtube(ctx,link):
+        global is_executing_command
+
+        if is_executing_command:
+            await ctx.send("Já estou tocando um áudio!")
+            return
+        is_executing_command = True
+        channel = ctx.author.voice.channel
+
+        if channel is not None:
+            await ctx.send("Aguarde um momento...")
+            file_path = comandsFunctions.dowloadVideo(link)
+            await ctx.send("Download concluído!")
+            vc = await channel.connect()
+            if not os.path.isfile(file_path):
+                await ctx.send("Arquivo não encontrado!")
+                await vc.disconnect()
+                return
+            vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
+            while vc.is_playing():
+                await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
+            await vc.disconnect()
+            #deletar um determinado arquivo
+            os.remove(file_path)
+        else:
+            await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
 
     @client.event
@@ -150,6 +229,9 @@ def run_discord_bot():
 
         if username == 'chaul0205':
             await message.add_reaction('<:Chaul:1243037858907029534>')
+
+        if username == 'humberto_cunha':
+            await message.add_reaction('🐺')
         
         if username == 'brunodss':
             await message.reply('Você é PUTA RAPAZ!')

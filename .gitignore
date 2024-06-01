@@ -2,3 +2,7 @@ venv
 .env
 __pycache__
 .vscode
+
+# arquivos dentro da pasta não devem ser ignorados
+!audios/silencer.mp3
+!audios/lobinho.mp3
