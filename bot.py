@@ -65,18 +65,19 @@ def run_discord_bot():
             await ctx.send(f"{member.name} não está em uma call.")
             return
 
-        # Inicia a votação
         await ctx.send(f"Vote no membro {member.name} para ser expulso da call. Reaja com 👍 para tirar ele da call ou com 👎 para não retirar ele da call")
 
-        # Envia a mensagem de votação
-        votacao_msg = await ctx.send("Vote agora aqui !")
-        await votacao_msg.add_reaction("👍")
-        await votacao_msg.add_reaction("👎")
+        # Inicia a votação
+        votacao_msg = await ctx.send("Vote aqui!")
+        await asyncio.gather(
+            votacao_msg.add_reaction("👍"),
+            votacao_msg.add_reaction("👎")
+        )
 
         # Tempo de votação (em segundos)
         tempo_votacao = 6
-
         await asyncio.sleep(tempo_votacao)
+
         await ctx.send("Votação encerrada!")
 
         # Atualiza a mensagem para obter as reações mais recentes
@@ -86,7 +87,6 @@ def run_discord_bot():
         reacoes = votacao_msg.reactions
         votos_positivos = 0
         votos_negativos = 0
-
         for reacao in reacoes:
             if reacao.emoji == "👍":
                 votos_positivos = reacao.count
@@ -97,8 +97,10 @@ def run_discord_bot():
         if votos_positivos > votos_negativos:
             # Tenta mover o usuário para outro canal ou desconectá-lo
             try:
-                await member.move_to(None)
-                await ctx.send(f"{member.name} foi removido da call com {votos_positivos} votos a favor e {votos_negativos} votos contra.")
+                await asyncio.gather(
+                    member.move_to(None),
+                    ctx.send(f"{member.name} foi removido da call com {votos_positivos} votos a favor e {votos_negativos} votos contra.")
+                )
             except Exception as e:
                 await ctx.send(f"Não foi possível remover {member.name} da call. Erro: {e}")
         else:
