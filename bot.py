@@ -67,6 +67,7 @@ def run_discord_bot():
     
     @client.command()
     async def chato(ctx, member: discord.Member):
+
         if member.voice is None:
             await ctx.send(f"{member.name} não está em uma call.")
             return
@@ -142,6 +143,8 @@ def run_discord_bot():
 
             await vc.disconnect()
 
+            is_executing_command = False
+
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
         
@@ -180,6 +183,8 @@ def run_discord_bot():
 
             await vc.disconnect()
 
+            is_executing_command = False
+
             for member in channel.members:
                 await member.edit(mute=False)
 
@@ -207,6 +212,9 @@ def run_discord_bot():
             while vc.is_playing():
                 await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
             await vc.disconnect()
+            
+            is_executing_command = False
+
             #deletar um determinado arquivo
             os.remove(file_path)
         else:
