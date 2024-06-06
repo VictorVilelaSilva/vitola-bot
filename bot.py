@@ -4,10 +4,13 @@ import comandsFunctions
 import asyncio
 import os
 from datetime import timedelta
+import google.generativeai as gemini
 
 is_executing_command: bool = False
 TOKEN: str = os.getenv('DISCORD_TOKEN')
 CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
+GPT_API_KEY = str = os.getenv('GEMINI_API_KEY')
+
 
 async def send_message_to_chat(client, message):
     # Obter o objeto channel
@@ -204,6 +207,24 @@ def run_discord_bot():
             os.remove(file_path)
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
+
+    @client.command()
+    async def gpt(ctx, *, message):
+
+        gemini.configure(api_key=GPT_API_KEY)
+        model = gemini.GenerativeModel("gemini-1.5-pro-latest")
+        chat = model.start_chat(history=[])
+
+        prompt = message
+
+        await ctx.send(f'Sua conversa com o gemini vai começar! Digite "fim" para encerrar a conversa.')
+
+        while prompt != "fim":
+            response = chat.send_message(prompt)
+            await ctx.send(response.text)
+            prompt = await client.wait_for('message') 
+            prompt = prompt.content
+
 
 
     @client.event
