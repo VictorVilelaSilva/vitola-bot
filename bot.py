@@ -7,9 +7,9 @@ from datetime import timedelta
 import google.generativeai as gemini
 
 is_executing_command: bool = False
-TOKEN: str = os.getenv('DISCORD_TOKEN')
+TOKEN: str         = os.getenv('DISCORD_TOKEN')
 CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
-GPT_API_KEY = str = os.getenv('GEMINI_API_KEY')
+IA_TOKEN : str     = os.getenv('GEMINI_API_KEY')
 
 
 async def send_message_to_chat(client, message):
@@ -209,21 +209,26 @@ def run_discord_bot():
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
     @client.command()
-    async def gpt(ctx, *, message):
-
-        gemini.configure(api_key=GPT_API_KEY)
+    async def gpt(ctx,message):
+        def check_author(m):
+            return m.author == ctx.author
+        gemini.configure(api_key=IA_TOKEN)
         model = gemini.GenerativeModel("gemini-1.5-pro-latest")
         chat = model.start_chat(history=[])
-
+        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e apatir dessa mensgem voce vai agir como tal"
+        chat.send_message(mensgem_inicial)
         prompt = message
-
-        await ctx.send(f'Sua conversa com o gemini vai começar! Digite "fim" para encerrar a conversa.')
+        await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
 
         while prompt != "fim":
             response = chat.send_message(prompt)
+            print(response.text)
             await ctx.send(response.text)
-            prompt = await client.wait_for('message') 
+
+            prompt = await client.wait_for('message', check=check_author)
             prompt = prompt.content
+        
+        await ctx.send("Conversa com o vitola bot encerrada!")
 
 
 
@@ -231,10 +236,10 @@ def run_discord_bot():
     async def on_message(message):
         if message.author == client.user:
             return
-
-        username = str(message.author)
-        user_message = str(message.content)
-        channel = str(message.channel)
+        
+        username = message.author
+        user_message = message.content
+        channel = message.channel
         print(f'{username} in {channel} said: {user_message}')
 
         if username == 'chaul0205':
