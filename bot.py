@@ -41,7 +41,7 @@ def run_discord_bot():
 
     @client.event
     async def on_voice_state_update(member, before, after):
-        global queue, vc
+        global queue, vc, is_executing_command
 
         if len(queue):
             return
@@ -49,6 +49,7 @@ def run_discord_bot():
         # Verifica se alguém entrou no canal de voz
         if before.channel is None and after.channel is not None:
             if member.name == 'humberto_cunha':
+                is_executing_command = True
                 # Pega a refeencia do canal de voz
                 channel = after.channel
                 # Entra no canal de voz
@@ -67,6 +68,7 @@ def run_discord_bot():
                 while vc.is_playing():
                     await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
                 # Desconecta do canal de voz
+                is_executing_command = False
                 await vc.disconnect()
 
 
@@ -120,9 +122,9 @@ def run_discord_bot():
 
     @client.command()
     async def tocar(ctx):
-        global queue, vc
+        global queue, vc, is_executing_command
 
-        if vc is not None and vc.is_playing():
+        if is_executing_command:
             queue.append({
                 "type": 'tocar',
                 "ctx": ctx
@@ -130,6 +132,7 @@ def run_discord_bot():
             await ctx.send(QUEUE_MESSAGE)
             return
 
+        is_executing_command = True
         channel = ctx.author.voice.channel
         if channel is not None:
             if vc is None or not vc.is_connected():
@@ -146,6 +149,7 @@ def run_discord_bot():
             while vc.is_playing():
                 await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
 
+            is_executing_command = False
             if len(queue):
                 await call_next_in_queue()
             else:
@@ -156,9 +160,9 @@ def run_discord_bot():
 
     @client.command()
     async def silence(ctx):
-        global queue, vc
+        global queue, vc, is_executing_command
 
-        if vc is not None and vc.is_playing():
+        if is_executing_command:
             queue.append({
                 "type": 'silence',
                 "ctx": ctx
@@ -166,6 +170,7 @@ def run_discord_bot():
             await ctx.send("Adicionado à fila. Será reproduzido quando o comando atual finalizar.")
             return
 
+        is_executing_command = True
         channel = ctx.author.voice.channel
         if channel is not None:
             if vc is None or not vc.is_connected():
@@ -189,6 +194,7 @@ def run_discord_bot():
             for member in channel.members:
                 await member.edit(mute=False)
 
+            is_executing_command = False
             if len(queue):
                 await call_next_in_queue()
             else:
@@ -197,9 +203,9 @@ def run_discord_bot():
 
     @client.command()
     async def youtube(ctx, link):
-        global queue, vc
+        global queue, vc, is_executing_command
 
-        if vc is not None and vc.is_playing():
+        if is_executing_command:
             queue.append({
                 "type": 'youtube',
                 "link": link,
@@ -208,6 +214,7 @@ def run_discord_bot():
             await ctx.send("Adicionado à fila. Será reproduzido quando o comando atual finalizar.")
             return
 
+        is_executing_command = True
         channel = ctx.author.voice.channel
         if channel is not None:
             file_path = helper.download_video(link)
@@ -225,6 +232,7 @@ def run_discord_bot():
             #deletar um determinado arquivo
             os.remove(file_path)
 
+            is_executing_command = False
             if len(queue):
                 await call_next_in_queue()
             else:
@@ -232,28 +240,32 @@ def run_discord_bot():
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
+
     @client.command()
     async def gpt(ctx,message):
+        global is_executing_command
+
         def check_author(m):
             return m.author == ctx.author
+
+        is_executing_command = True
         gemini.configure(api_key=IA_TOKEN)
         model = gemini.GenerativeModel("gemini-1.5-pro-latest")
         chat = model.start_chat(history=[])
-        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e apatir dessa mensgem voce vai agir como tal"
+        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal"
         chat.send_message(mensgem_inicial)
         prompt = message
         await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
 
         while prompt != "fim":
             response = chat.send_message(prompt)
-            print(response.text)
             await ctx.send(response.text)
 
             prompt = await client.wait_for('message', check=check_author)
             prompt = prompt.content
-        
-        await ctx.send("Conversa com o vitola bot encerrada!")
 
+        is_executing_command = False
+        await ctx.send("Conversa com o vitola bot encerrada!")
 
 
     @client.event
