@@ -1,5 +1,9 @@
 import os
 from pytube import YouTube
+import google.generativeai as gpt
+from dotenv import load_dotenv
+
+GPT_API_KEY = str = os.getenv('GEMINI_API_KEY')
 
 def download_video(link):
     try: 
@@ -22,3 +26,6 @@ def download_video(link):
     except Exception as e:
         print(f'Ocorreu um erro: {e}')
         exit()
+
+
+

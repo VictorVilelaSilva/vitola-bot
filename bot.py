@@ -4,9 +4,13 @@ import helper
 import asyncio
 import os
 from datetime import timedelta
+import google.generativeai as gemini
 
-TOKEN: str = os.getenv('DISCORD_TOKEN')
+is_executing_command: bool = False
+TOKEN: str         = os.getenv('DISCORD_TOKEN')
 CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
+IA_TOKEN : str     = os.getenv('GEMINI_API_KEY')
+
 
 QUEUE_MESSAGE: str = "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
 
@@ -228,15 +232,38 @@ def run_discord_bot():
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
+    @client.command()
+    async def gpt(ctx,message):
+        def check_author(m):
+            return m.author == ctx.author
+        gemini.configure(api_key=IA_TOKEN)
+        model = gemini.GenerativeModel("gemini-1.5-pro-latest")
+        chat = model.start_chat(history=[])
+        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e apatir dessa mensgem voce vai agir como tal"
+        chat.send_message(mensgem_inicial)
+        prompt = message
+        await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
+
+        while prompt != "fim":
+            response = chat.send_message(prompt)
+            print(response.text)
+            await ctx.send(response.text)
+
+            prompt = await client.wait_for('message', check=check_author)
+            prompt = prompt.content
+        
+        await ctx.send("Conversa com o vitola bot encerrada!")
+
+
 
     @client.event
     async def on_message(message):
         if message.author == client.user:
             return
-
-        username = str(message.author)
-        user_message = str(message.content)
-        channel = str(message.channel)
+        
+        username = message.author
+        user_message = message.content
+        channel = message.channel
         print(f'{username} in {channel} said: {user_message}')
 
         if username == 'chaul0205':
