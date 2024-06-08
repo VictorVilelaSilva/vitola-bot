@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import comandsFunctions
+import helper
 import asyncio
 import os
 from datetime import timedelta
@@ -12,13 +12,17 @@ CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
 IA_TOKEN : str     = os.getenv('GEMINI_API_KEY')
 
 
+QUEUE_MESSAGE: str = "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
+
+queue: list = []
+vc: discord.VoiceChannel = None
+
 async def send_message_to_chat(client, message):
     # Obter o objeto channel
     channel = client.get_channel(CHANNEL_TOKEN)
 
     # Enviar a mensagem
     await channel.send(message)
-
 
 def run_discord_bot():
     if TOKEN is None:
@@ -29,7 +33,7 @@ def run_discord_bot():
 
     PREFIX = '!'
     # client = discord.Client(intents=intents)
-    client = commands.Bot(command_prefix = PREFIX, intents=intents)
+    client = commands.Bot(command_prefix=PREFIX, intents=intents)
 
     @client.event
     async def on_ready():
@@ -37,16 +41,21 @@ def run_discord_bot():
 
     @client.event
     async def on_voice_state_update(member, before, after):
-        global is_executing_command
-        if is_executing_command:
+        global queue, vc, is_executing_command
+
+        if len(queue):
             return
+
         # Verifica se alguém entrou no canal de voz
         if before.channel is None and after.channel is not None:
             if member.name == 'humberto_cunha':
+                is_executing_command = True
                 # Pega a refeencia do canal de voz
                 channel = after.channel
                 # Entra no canal de voz
-                vc = await channel.connect()
+                if vc is None or not vc.is_connected():
+                    vc = await channel.connect()
+
                 file_path = 'audios/lobinho.mp3'
                 # Verifica se o arquivo existe
                 if not os.path.isfile(file_path):
@@ -59,6 +68,7 @@ def run_discord_bot():
                 while vc.is_playing():
                     await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
                 # Desconecta do canal de voz
+                is_executing_command = False
                 await vc.disconnect()
 
 
@@ -112,18 +122,23 @@ def run_discord_bot():
 
     @client.command()
     async def tocar(ctx):
-        global is_executing_command
+        global queue, vc, is_executing_command
 
         if is_executing_command:
-            await ctx.send("Já estou tocando um áudio!")
+            queue.append({
+                "type": 'tocar',
+                "ctx": ctx
+            })
+            await ctx.send(QUEUE_MESSAGE)
             return
+
         is_executing_command = True
-        #entra no canal de voz e toca uma audio
         channel = ctx.author.voice.channel
         if channel is not None:
-            vc = await channel.connect()
-            file_path = 'audios/lobinho.mp3'
+            if vc is None or not vc.is_connected():
+                vc = await channel.connect()
 
+            file_path = 'audios/lobinho.mp3'
             if not os.path.isfile(file_path):
                 await ctx.send("Arquivo não encontrado!")
                 await vc.disconnect()
@@ -134,28 +149,34 @@ def run_discord_bot():
             while vc.is_playing():
                 await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
 
-            await vc.disconnect()
             is_executing_command = False
+            if len(queue):
+                await call_next_in_queue()
+            else:
+                await vc.disconnect()
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
 
     @client.command()
     async def silence(ctx):
-        global is_executing_command
+        global queue, vc, is_executing_command
 
         if is_executing_command:
-            await ctx.send("Já estou tocando um áudio!")
+            queue.append({
+                "type": 'silence',
+                "ctx": ctx
+            })
+            await ctx.send("Adicionado à fila. Será reproduzido quando o comando atual finalizar.")
             return
 
         is_executing_command = True
-
         channel = ctx.author.voice.channel
-
         if channel is not None:
-            vc = await channel.connect()
-            file_path = 'audios/silencer.mp3'
+            if vc is None or not vc.is_connected():
+                vc = await channel.connect()
 
+            file_path = 'audios/silencer.mp3'
             if not os.path.isfile(file_path):
                 await ctx.send("Arquivo não encontrado!")
                 await vc.disconnect()
@@ -170,66 +191,89 @@ def run_discord_bot():
             while vc.is_playing():
                 await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
 
-            await vc.disconnect()
-            is_executing_command = False
-
             for member in channel.members:
                 await member.edit(mute=False)
 
+            is_executing_command = False
+            if len(queue):
+                await call_next_in_queue()
+            else:
+                await vc.disconnect()
+
 
     @client.command()
-    async def youtube(ctx,link):
-        global is_executing_command
+    async def youtube(ctx, link):
+        global queue, vc, is_executing_command
 
         if is_executing_command:
-            await ctx.send("Já estou tocando um áudio!")
+            queue.append({
+                "type": 'youtube',
+                "link": link,
+                "ctx": ctx
+            })
+            await ctx.send("Adicionado à fila. Será reproduzido quando o comando atual finalizar.")
             return
+
         is_executing_command = True
         channel = ctx.author.voice.channel
-
         if channel is not None:
-            await ctx.send("Aguarde um momento...")
-            file_path = comandsFunctions.dowloadVideo(link)
-            await ctx.send("Download concluído!")
-            vc = await channel.connect()
+            file_path = helper.download_video(link)
             if not os.path.isfile(file_path):
-                await ctx.send("Arquivo não encontrado!")
-                await vc.disconnect()
+                await ctx.send("Download mal sucedido.")
                 return
+
+            if vc is None or not vc.is_connected():
+                vc = await channel.connect()
+
             vc.play(discord.FFmpegPCMAudio(file_path), after=lambda e: print('done', e))
             while vc.is_playing():
-                await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))
-
-            await vc.disconnect()
-            is_executing_command = False
+                await discord.utils.sleep_until(discord.utils.utcnow() + timedelta(seconds=1))            
 
             #deletar um determinado arquivo
             os.remove(file_path)
+
+            is_executing_command = False
+            if len(queue):
+                await call_next_in_queue()
+            else:
+                await vc.disconnect()
         else:
             await ctx.send("Você precisa estar em um canal de voz para usar esse comando.")
 
+
     @client.command()
     async def gpt(ctx,message):
+        global is_executing_command
+
         def check_author(m):
             return m.author == ctx.author
+
+        if is_executing_command:
+            await ctx.send("Bot ocupado no momento.")
+            return
+
+        if not message:
+            await ctx.send("Você precisa enviar uma mensagem com o comando !gpt")
+            return
+
+        is_executing_command = True
         gemini.configure(api_key=IA_TOKEN)
         model = gemini.GenerativeModel("gemini-1.5-pro-latest")
         chat = model.start_chat(history=[])
-        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e apatir dessa mensgem voce vai agir como tal"
+        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal"
         chat.send_message(mensgem_inicial)
         prompt = message
         await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
 
         while prompt != "fim":
             response = chat.send_message(prompt)
-            print(response.text)
             await ctx.send(response.text)
 
             prompt = await client.wait_for('message', check=check_author)
             prompt = prompt.content
-        
-        await ctx.send("Conversa com o vitola bot encerrada!")
 
+        is_executing_command = False
+        await ctx.send("Conversa com o vitola bot encerrada!")
 
 
     @client.event
@@ -257,5 +301,19 @@ def run_discord_bot():
         #             await message.channel.send(':astral: @vitolaapenas :astral:')
         #             await member.move_to(None)
         #             break
+
+    async def call_next_in_queue():
+        global queue, vc
+
+        next_command = queue.pop(0)
+        match next_command['type']:
+            case 'youtube':
+                await youtube(next_command['ctx'], next_command['link'])
+            case 'silence':
+                await silence(next_command['ctx'])
+            case 'tocar':
+                await tocar(next_command['ctx'])
+            case _:
+                raise TypeError('Command type does not match.')
 
     client.run(TOKEN)

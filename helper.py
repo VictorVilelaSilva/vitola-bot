@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 GPT_API_KEY = str = os.getenv('GEMINI_API_KEY')
 
-def dowloadVideo(link):
+def download_video(link):
     try: 
         yt = YouTube(link)
         dest_dir = 'audios/'
