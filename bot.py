@@ -248,6 +248,14 @@ def run_discord_bot():
         def check_author(m):
             return m.author == ctx.author
 
+        if is_executing_command:
+            await ctx.send("Bot ocupado no momento.")
+            return
+
+        if not message:
+            await ctx.send("Você precisa enviar uma mensagem com o comando !gpt")
+            return
+
         is_executing_command = True
         gemini.configure(api_key=IA_TOKEN)
         model = gemini.GenerativeModel("gemini-1.5-pro-latest")
