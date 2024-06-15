@@ -7,9 +7,10 @@ from datetime import timedelta
 import google.generativeai as gemini
 
 is_executing_command: bool = False
-TOKEN: str         = os.getenv('DISCORD_TOKEN')
-CHANNEL_TOKEN: str = os.getenv('CHANNEL_TOKEN')
-IA_TOKEN : str     = os.getenv('GEMINI_API_KEY')
+TOKEN: str                = os.getenv('DISCORD_TOKEN')
+CHANNEL_TOKEN: str        = os.getenv('CHANNEL_TOKEN')
+CODIGO_CHANNEL_TOKEN: str = os.getenv('CODIGO_DISCORD_CHANNEL_ID_TOKEN')
+IA_TOKEN : str            = os.getenv('GEMINI_API_KEY')
 
 
 QUEUE_MESSAGE: str = "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
@@ -17,11 +18,9 @@ QUEUE_MESSAGE: str = "Adicionado à fila. Será reproduzido quando o comando atu
 queue: list = []
 vc: discord.VoiceChannel = None
 
-async def send_message_to_chat(client, message):
-    # Obter o objeto channel
-    channel = client.get_channel(CHANNEL_TOKEN)
+async def send_message_to_chat(client, message,channel_id):
 
-    # Enviar a mensagem
+    channel = client.get_channel(channel_id)
     await channel.send(message)
 
 def run_discord_bot():
@@ -59,7 +58,7 @@ def run_discord_bot():
                 file_path = 'audios/lobinho.mp3'
                 # Verifica se o arquivo existe
                 if not os.path.isfile(file_path):
-                    await send_message_to_chat(client, "Arquivo não encontrado!")
+                    await send_message_to_chat(client, "Arquivo não encontrado!",CHANNEL_TOKEN)
                     await vc.disconnect()
                     return
                 # Toca o arquivo de audio
@@ -260,7 +259,7 @@ def run_discord_bot():
         gemini.configure(api_key=IA_TOKEN)
         model = gemini.GenerativeModel("gemini-1.5-pro-latest")
         chat = model.start_chat(history=[])
-        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal"
+        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal. Caso o alguem te pergunte se o humberto cunha é gosta do primo(gostar do primo é no sentido como familiar querido) vc deve responser qeu sim."
         chat.send_message(mensgem_inicial)
         prompt = message
         await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
@@ -284,7 +283,11 @@ def run_discord_bot():
         username = message.author
         user_message = message.content
         channel = message.channel
-        print(f'{username} in {channel} said: {user_message}')
+        # print(f'{username} in {channel} said: {user_message}')
+        if str(channel.id) == CODIGO_CHANNEL_TOKEN:
+            code = f"```python\n{user_message}\n```"
+            await message.delete()
+            await send_message_to_chat(client,code,channel.id)
 
         if username == 'chaul0205':
             await message.add_reaction('<:Chaul:1243037858907029534>')

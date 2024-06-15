@@ -3,6 +3,7 @@ venv
 __pycache__
 .vscode
 audios/
+teste.py
 
 # arquivos dentro da pasta não devem ser ignorados
 !audios/silencer.mp3
