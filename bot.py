@@ -308,15 +308,16 @@ def run_discord_bot():
     async def call_next_in_queue():
         global queue, vc
 
-        next_command = queue.pop(0)
-        match next_command['type']:
-            case 'youtube':
+        if len(queue) > 0:
+            next_command = queue.pop(0)
+            command_type = next_command.get('type')
+            if command_type == 'yt':
                 await youtube(next_command['ctx'], next_command['link'])
-            case 'silence':
+            elif command_type == 'silence':
                 await silence(next_command['ctx'])
-            case 'tocar':
+            elif command_type == 'tocar':
                 await tocar(next_command['ctx'])
-            case _:
+            else:
                 raise TypeError('Command type does not match.')
 
     client.run(TOKEN)
