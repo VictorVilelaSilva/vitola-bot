@@ -257,10 +257,9 @@ def run_discord_bot():
 
         is_executing_command = True
         gemini.configure(api_key=IA_TOKEN)
-        model = gemini.GenerativeModel("gemini-1.5-pro-latest")
+        instrução_do_bot = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal. Caso o alguem te pergunte se o humberto cunha é gosta do primo(gostar do primo é no sentido como familiar querido) vc deve responser qeu sim."
+        model = gemini.GenerativeModel(model_name="gemini-1.5-pro-latest",system_instruction=instrução_do_bot)
         chat = model.start_chat(history=[])
-        mensgem_inicial = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal. Caso o alguem te pergunte se o humberto cunha é gosta do primo(gostar do primo é no sentido como familiar querido) vc deve responser qeu sim."
-        chat.send_message(mensgem_inicial)
         prompt = message
         await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
 
