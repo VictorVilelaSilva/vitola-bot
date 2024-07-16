@@ -1,17 +1,15 @@
 import discord
-from discord.ext import commands
 import helper
 import asyncio
 import os
+from Gemini import Gemini
 from datetime import timedelta
-import google.generativeai as gemini
+from discord.ext import commands
 
 is_executing_command: bool = False
 TOKEN: str                = os.getenv('DISCORD_TOKEN')
 CHANNEL_TOKEN: str        = os.getenv('CHANNEL_TOKEN')
 CODIGO_CHANNEL_TOKEN: str = os.getenv('CODIGO_DISCORD_CHANNEL_ID_TOKEN')
-IA_TOKEN : str            = os.getenv('GEMINI_API_KEY')
-
 
 QUEUE_MESSAGE: str = "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
 
@@ -241,7 +239,7 @@ def run_discord_bot():
 
 
     @client.command()
-    async def gpt(ctx,message):
+    async def gpt(ctx,message = ' '):
         global is_executing_command
 
         def check_author(m):
@@ -251,15 +249,8 @@ def run_discord_bot():
             await ctx.send("Bot ocupado no momento.")
             return
 
-        if not message:
-            await ctx.send("Você precisa enviar uma mensagem com o comando !gpt")
-            return
-
         is_executing_command = True
-        gemini.configure(api_key=IA_TOKEN)
-        instrução_do_bot = "Adote um papel de um bot de discord chamado vitola bot e seu criador se chama victor de souza e a partir dessa mensagem voce vai agir como tal. Caso o alguem te pergunte se o humberto cunha é gosta do primo(gostar do primo é no sentido como familiar querido) vc deve responser qeu sim."
-        model = gemini.GenerativeModel(model_name="gemini-1.5-pro-latest",system_instruction=instrução_do_bot)
-        chat = model.start_chat(history=[])
+        chat = Gemini().startModel().start_chat(history=[])
         prompt = message
         await ctx.send(f'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.')
 
