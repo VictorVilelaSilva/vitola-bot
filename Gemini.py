@@ -1,5 +1,4 @@
 import os
-from typing import Any
 import google.generativeai as gemini
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
