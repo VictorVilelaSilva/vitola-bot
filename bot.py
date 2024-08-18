@@ -17,7 +17,7 @@ class DiscordBot:
         self.TOKEN = os.getenv("DISCORD_TOKEN")
         self.CODIGO_CHANNEL_TOKEN = os.getenv("CODIGO_DISCORD_CHANNEL_ID_TOKEN")
         self.QUEUE_MESSAGE = (
-            "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
+            "Adicionado à fila. Será reproduzido quando a musica atual finalizar."
         )
 
     async def send_message_to_chat(client, message, channel_id):
@@ -148,7 +148,7 @@ class DiscordBot:
 
                 self.IS_EXECUTING_COMMAND = False
                 if len(self.QUEUE):
-                    await self.call_next_in_QUEUE()
+                    await call_next_in_QUEUE()
                 else:
                     await self.vc.disconnect()
             else:
@@ -195,29 +195,42 @@ class DiscordBot:
 
                 self.IS_EXECUTING_COMMAND = False
                 if len(self.QUEUE):
-                    await self.call_next_in_QUEUE()
+                    await call_next_in_QUEUE()
                 else:
                     await self.vc.disconnect()
 
         @client.command(aliases=["yt"])
         async def youtube(ctx, link):
             if self.IS_EXECUTING_COMMAND:
-                self.QUEUE.append({"type": "youtube", "link": link, "ctx": ctx})
-                await ctx.send(
-                    "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
-                )
-                return
+                if link == 'next':
+                    self.vc.stop()
+                    await call_next_in_QUEUE()
+                    return
+                elif link == 'quit':
+                    self.vc.stop()
+                    await self.vc.disconnect()
+                    self.QUEUE = []
+                    await ctx.send('Saindo do canal de voz.')
+                    return
+                else:
+                    self.QUEUE.append({"type": "youtube", "link": link, "ctx": ctx})
+                    await ctx.send(
+                        "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
+                    )
+                    return
 
             self.IS_EXECUTING_COMMAND = True
             channel = ctx.author.voice.channel
             if channel is not None:
-                file_path = helper.download_video(link)
+                file_path,yt_title = helper.download_video(link)
                 if not os.path.isfile(file_path):
                     await ctx.send("Download mal sucedido.")
                     return
 
                 if self.vc is None or not self.vc.is_connected():
                     self.vc = await channel.connect()
+
+                await ctx.send(f"Tocando {yt_title}...")
 
                 self.vc.play(
                     discord.FFmpegPCMAudio(file_path), after=lambda e: print("done", e)
@@ -231,7 +244,8 @@ class DiscordBot:
 
                 self.IS_EXECUTING_COMMAND = False
                 if len(self.QUEUE):
-                    await self.call_next_in_QUEUE()
+                    ## chama a funçao call_next_in_QUEUE
+                    await call_next_in_QUEUE()
                 else:
                     await self.vc.disconnect()
             else:
@@ -288,17 +302,16 @@ class DiscordBot:
 
             await client.process_commands(message)
 
-        async def call_next_in_QUEUE(self):
-            if len(self.QUEUE) > 0:
-                next_command = self.QUEUE.pop(0)
-                command_type = next_command.get("type")
-                if command_type == "yt":
-                    await self.youtube(next_command["ctx"], next_command["link"])
-                elif command_type == "silence":
-                    await self.silence(next_command["ctx"])
-                elif command_type == "tocar":
-                    await self.tocar(next_command["ctx"])
-                else:
-                    raise TypeError("Command type does not match.")
+        async def call_next_in_QUEUE():
+            next_command = self.QUEUE.pop(0)
+            match next_command['type']:
+                case 'youtube':
+                    await youtube(next_command['ctx'], next_command['link'])
+                case 'silence':
+                    await silence(next_command['ctx'])
+                case 'tocar':
+                    await tocar(next_command['ctx'])
+                case _:
+                    raise TypeError('Command type does not match.')
 
         client.run(self.TOKEN)
