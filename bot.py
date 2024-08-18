@@ -1,6 +1,5 @@
-from ast import alias
 import discord
-import helper
+from commands import youtubeFunc, silenceFunc, tocarFunc
 import asyncio
 import os
 from Gemini import Gemini
@@ -10,6 +9,7 @@ from discord.ext import commands
 
 class DiscordBot:
     def __init__(self):
+        self.client = None
         self.QUEUE: list = []
         self.vc: discord.VoiceChannel = None
         self.IS_EXECUTING_COMMAND: bool = False
@@ -30,17 +30,16 @@ class DiscordBot:
             exit(1)
         intents = discord.Intents.default()
         intents.message_content = True
-        client = commands.Bot(command_prefix="!", intents=intents)
+        self.client = commands.Bot(command_prefix="!", intents=intents)
 
-        @client.event
+        @self.client.event
         async def on_ready():
-            print(f"Estrou on the line {client.user}")
+            print(f"Estrou on the line {self.client.user}")
 
-        @client.event
+        @self.client.event
         async def on_voice_state_update(member, before, after):
             if len(self.QUEUE):
                 return
-
             if before.channel is None and after.channel is not None:
                 if member.name == "humberto_cunha":
                     self.IS_EXECUTING_COMMAND = True
@@ -51,7 +50,7 @@ class DiscordBot:
                     file_path = "audios/lobinho.mp3"
                     if not os.path.isfile(file_path):
                         await self.send_message_to_chat(
-                            client, "Arquivo não encontrado!", self.CODIGO_CHANNEL_TOKEN
+                            self.client, "Arquivo não encontrado!", self.CODIGO_CHANNEL_TOKEN
                         )
                         await self.vc.disconnect()
                         return
@@ -68,7 +67,7 @@ class DiscordBot:
                     self.IS_EXECUTING_COMMAND = False
                     await self.vc.disconnect()
 
-        @client.command()
+        @self.client.command()
         async def chato(ctx, member: discord.Member):
             if member.voice is None:
                 await ctx.send(f"{member.name} não está em uma call.")
@@ -116,144 +115,20 @@ class DiscordBot:
                     f"{member.name} permanecerá na call. Votos a favor: {votos_positivos}, votos contra: {votos_negativos}"
                 )
 
-        @client.command()
+        @self.client.command()
         async def tocar(ctx):
-            if self.IS_EXECUTING_COMMAND:
-                self.QUEUE.append({"type": "tocar", "ctx": ctx})
-                await ctx.send(
-                    "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
-                )
-                return
+            await tocarFunc(ctx, self)
 
-            self.IS_EXECUTING_COMMAND = True
-            channel = ctx.author.voice.channel
-            if channel is not None:
-                if self.vc is None or not self.vc.is_connected():
-                    self.vc = await channel.connect()
-
-                file_path = "audios/lobinho.mp3"
-                if not os.path.isfile(file_path):
-                    await ctx.send("Arquivo não encontrado!")
-                    await self.vc.disconnect()
-                    return
-
-                self.vc.play(
-                    discord.FFmpegPCMAudio(file_path), after=lambda e: print("done", e)
-                )
-
-                while self.vc.is_playing():
-                    await discord.utils.sleep_until(
-                        discord.utils.utcnow() + timedelta(seconds=1)
-                    )
-
-                self.IS_EXECUTING_COMMAND = False
-                if len(self.QUEUE):
-                    await call_next_in_QUEUE()
-                else:
-                    await self.vc.disconnect()
-            else:
-                await ctx.send(
-                    "Você precisa estar em um canal de voz para usar esse comando."
-                )
-
-        @client.command()
+        @self.client.command()
         async def silence(ctx):
-            if self.IS_EXECUTING_COMMAND:
-                self.QUEUE.append({"type": "silence", "ctx": ctx})
-                await ctx.send(
-                    "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
-                )
-                return
+            await silenceFunc(ctx, self)
 
-            self.IS_EXECUTING_COMMAND = True
-            channel = ctx.author.voice.channel
-            if channel is not None:
-                if self.vc is None or not self.vc.is_connected():
-                    self.vc = await channel.connect()
-
-                file_path = "audios/silencer.mp3"
-                if not os.path.isfile(file_path):
-                    await ctx.send("Arquivo não encontrado!")
-                    await self.vc.disconnect()
-                    return
-
-                self.vc.play(
-                    discord.FFmpegPCMAudio(file_path), after=lambda e: print("done", e)
-                )
-
-                for member in channel.members:
-                    if member != client.user:
-                        await member.edit(mute=True)
-
-                while self.vc.is_playing():
-                    await discord.utils.sleep_until(
-                        discord.utils.utcnow() + timedelta(seconds=1)
-                    )
-
-                for member in channel.members:
-                    await member.edit(mute=False)
-
-                self.IS_EXECUTING_COMMAND = False
-                if len(self.QUEUE):
-                    await call_next_in_QUEUE()
-                else:
-                    await self.vc.disconnect()
-
-        @client.command(aliases=["yt"])
+        @self.client.command(aliases=["yt"])
         async def youtube(ctx, link):
-            if self.IS_EXECUTING_COMMAND:
-                if link == 'next':
-                    self.vc.stop()
-                    await call_next_in_QUEUE()
-                    return
-                elif link == 'quit':
-                    self.vc.stop()
-                    await self.vc.disconnect()
-                    self.QUEUE = []
-                    await ctx.send('Saindo do canal de voz.')
-                    return
-                else:
-                    self.QUEUE.append({"type": "youtube", "link": link, "ctx": ctx})
-                    await ctx.send(
-                        "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
-                    )
-                    return
+            await youtubeFunc(ctx, link, self)
+            
 
-            self.IS_EXECUTING_COMMAND = True
-            channel = ctx.author.voice.channel
-            if channel is not None:
-                file_path,yt_title = helper.download_video(link)
-                if not os.path.isfile(file_path):
-                    await ctx.send("Download mal sucedido.")
-                    return
-
-                if self.vc is None or not self.vc.is_connected():
-                    self.vc = await channel.connect()
-
-                await ctx.send(f"Tocando {yt_title}...")
-
-                self.vc.play(
-                    discord.FFmpegPCMAudio(file_path), after=lambda e: print("done", e)
-                )
-                while self.vc.is_playing():
-                    await discord.utils.sleep_until(
-                        discord.utils.utcnow() + timedelta(seconds=1)
-                    )
-
-                os.remove(file_path)
-
-                self.IS_EXECUTING_COMMAND = False
-                if len(self.QUEUE):
-                    ## chama a funçao call_next_in_QUEUE
-                    await call_next_in_QUEUE()
-                else:
-                    await self.vc.disconnect()
-            else:
-                await ctx.send(
-                    "Você precisa estar em um canal de voz para usar esse comando."
-                )
-
-        @client.command()
+        @self.client.command()
         async def gpt(ctx, message=" "):
             def check_author(m):
                 return m.author == ctx.author
@@ -273,15 +148,15 @@ class DiscordBot:
                 response = chat.send_message(prompt)
                 await ctx.send(response.text)
 
-                prompt = await client.wait_for("message", check=check_author)
+                prompt = await self.client.wait_for("message", check=check_author)
                 prompt = prompt.content
 
             self.IS_EXECUTING_COMMAND = False
             await ctx.send("Conversa com o vitola bot encerrada!")
 
-        @client.event
+        @self.client.event
         async def on_message(message):
-            if message.author == client.user:
+            if message.author == self.client.user:
                 return
 
             username = message.author
@@ -291,7 +166,7 @@ class DiscordBot:
             if str(channel.id) == self.CODIGO_CHANNEL_TOKEN:
                 code = f"```python\n{user_message}\n```"
                 await message.delete()
-                await self.send_message_to_chat(client, code, channel.id)
+                await self.send_message_to_chat(self.client, code, channel.id)
 
             if username == "chaul0205":
                 await message.add_reaction("<:Chaul:1243037858907029534>")
@@ -300,18 +175,19 @@ class DiscordBot:
             if username == "brunodss":
                 await message.reply("Você é PUTA RAPAZ!")
 
-            await client.process_commands(message)
+            await self.client.process_commands(message)
 
-        async def call_next_in_QUEUE():
-            next_command = self.QUEUE.pop(0)
-            match next_command['type']:
-                case 'youtube':
-                    await youtube(next_command['ctx'], next_command['link'])
-                case 'silence':
-                    await silence(next_command['ctx'])
-                case 'tocar':
-                    await tocar(next_command['ctx'])
-                case _:
-                    raise TypeError('Command type does not match.')
+        self.client.run(self.TOKEN)
 
-        client.run(self.TOKEN)
+    async def call_next_in_QUEUE(self):
+        next_command = self.QUEUE.pop(0)
+        command_type = next_command['type']
+        if command_type == 'youtube':
+            await youtubeFunc(next_command['ctx'], next_command['link'], self)
+        elif command_type == 'silence':
+            await silenceFunc(next_command['ctx'])
+        elif command_type == 'tocar':
+            await tocarFunc(next_command['ctx'])
+        else:
+            raise TypeError('Command type does not match.')
+
