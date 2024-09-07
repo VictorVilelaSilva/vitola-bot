@@ -49,7 +49,7 @@ class DiscordBot:
                     if self.vc is None or not self.vc.is_connected():
                         self.vc = await channel.connect()
 
-                    file_path = "audios/lobinho.mp3"
+                    file_path = "assets/audios/lobinho.mp3"
                     if not os.path.isfile(file_path):
                         await self.send_message_to_chat(
                             self.client, "Arquivo não encontrado!", self.CODIGO_CHANNEL_TOKEN

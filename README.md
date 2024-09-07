@@ -43,3 +43,16 @@ pip freeze > requirements.txt
 ```
 
 > Note: This will overwrite the current requirements.txt file
+
+
+## Build docker image
+
+```bash
+docker build -t bot-vitola .
+```
+
+## Deploy with minikube and kubectl
+
+```bash
+kubectl apply -f deploy/
+```

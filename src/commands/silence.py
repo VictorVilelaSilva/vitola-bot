@@ -17,7 +17,7 @@ async def silenceMemberFunc(ctx, bot, member: discord.Member):
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        file_path = "audios/silencer_member.mp3"
+        file_path = "assets/audios/silencer_member.mp3"
         if not os.path.isfile(file_path):
             await ctx.send("Arquivo não encontrado!")
             await bot.vc.disconnect()
@@ -55,7 +55,7 @@ async def silenceFunc(ctx, bot):
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        file_path = "audios/silencer.mp3"
+        file_path = "assets/audios/silencer.mp3"
         if not os.path.isfile(file_path):
             await ctx.send("Arquivo não encontrado!")
             await bot.vc.disconnect()
