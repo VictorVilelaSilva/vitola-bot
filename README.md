@@ -50,3 +50,9 @@ pip freeze > requirements.txt
 ```bash
 docker build -t bot-vitola .
 ```
+
+## Deploy with minikube and kubectl
+
+```bash
+kubectl apply -f deploy/
+```
