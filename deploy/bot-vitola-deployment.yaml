@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: app-bot
+   namespace: bot-vitola
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         bot: web
+   template:
+      metadata:
+         labels:
+            bot: web
+      spec:
+         containers:
+            - name: bot-app
+              image: bot-vitola:latest
+              imagePullPolicy: Never
+              envFrom:
+              - secretRef:
+                  name: dotenv
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: bot-entrypoint
+   namespace: bot-vitola
+spec:
+   type: NodePort
+   selector:
+      bot: web
+   ports:
+      - port: 3000
+        targetPort: 3000
+        nodePort: 30001

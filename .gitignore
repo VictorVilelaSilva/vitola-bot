@@ -2,10 +2,10 @@ venv
 .env
 __pycache__
 .vscode
-audios/
+assets/audios/
 teste.py
 
 # arquivos dentro da pasta não devem ser ignorados
-!audios/silencer.mp3
-!audios/lobinho.mp3
-!audios/silencer_members.mp3
+!assets/audios/silencer.mp3
+!assets/audios/lobinho.mp3
+!assets/audios/silencer_members.mp3

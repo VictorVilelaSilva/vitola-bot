@@ -43,3 +43,10 @@ pip freeze > requirements.txt
 ```
 
 > Note: This will overwrite the current requirements.txt file
+
+
+## Build docker image
+
+```bash
+docker build -t bot-vitola .
+```
