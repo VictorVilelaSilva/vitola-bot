@@ -6,6 +6,8 @@ from Gemini import Gemini
 from datetime import timedelta
 from discord.ext import commands
 
+from commands.silence import silenceMemberFunc
+
 
 class DiscordBot:
     def __init__(self):
@@ -120,8 +122,11 @@ class DiscordBot:
             await tocarFunc(ctx, self)
 
         @self.client.command()
-        async def silence(ctx):
-            await silenceFunc(ctx, self)
+        async def silence(ctx,member: discord.Member = None):
+            if member is None:
+                await silenceFunc(ctx, self)
+                return
+            await silenceMemberFunc(ctx, self, member)
 
         @self.client.command(aliases=["yt"])
         async def youtube(ctx, link):

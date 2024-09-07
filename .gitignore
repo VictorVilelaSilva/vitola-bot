@@ -8,3 +8,4 @@ teste.py
 # arquivos dentro da pasta não devem ser ignorados
 !audios/silencer.mp3
 !audios/lobinho.mp3
+!audios/silencer_members.mp3
