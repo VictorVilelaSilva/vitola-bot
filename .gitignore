@@ -2,4 +2,5 @@ venv
 .env
 __pycache__
 .vscode
+assets/tempAudios/*
 teste.py
