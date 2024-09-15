@@ -1,11 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+# Activate the virtual environment
+source /opt/app/venv/bin/activate
 
-# activate our virtual environment here
-. ./venv/bin/activate
-
-# You can put other setup logic here
-
-# Evaluating passed command:
+# Execute the command passed to the entrypoint (e.g., "python main.py")
 exec "$@"
