@@ -1,28 +1,25 @@
 FROM python:3.12-slim-bookworm
 
-RUN adduser --system --group --no-create-home bot \
-    && usermod -aG sudo bot \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         bash \
         curl \
         build-essential \
         ffmpeg
 
-WORKDIR /app
-COPY ./src ./src
-COPY ./assets ./assets
-COPY ./requirements.txt ./requirements.txt
-COPY ./entrypoint.sh ./entrypoint.sh
+WORKDIR /opt/app
+COPY . /opt/app
 
-RUN chown -R bot . && chmod u+x ./entrypoint.sh
+RUN python -m venv /opt/app/venv \
+    && /opt/app/venv/bin/pip install --upgrade pip \
+    && /opt/app/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-USER bot
+RUN useradd -ms /bin/bash botuser \
+    && chown -R botuser:botuser /opt/app \
+    && chmod +x /opt/app/entrypoint.sh
 
-RUN python -m venv venv \
-    && . ./venv/bin/activate \
-    && pip install -r requirements.txt
+USER botuser
 
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ./entrypoint.sh $0 $@
-CMD [ "python", "src/main.py" ]
+ENTRYPOINT /opt/app/entrypoint.sh $0 $@
+CMD [ "/opt/app/venv/bin/python", "src/main.py" ]
