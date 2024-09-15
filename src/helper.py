@@ -5,7 +5,7 @@ def download_video(link):
     try: 
         yt = YouTube(link)
         yt_title = yt.title
-        dest_dir = 'assets/audios/'
+        dest_dir = 'assets/tempAudios/'
         ys = yt.streams.get_highest_resolution()
         ys = yt.streams.filter(only_audio=True).first()
 
