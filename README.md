@@ -53,6 +53,7 @@ docker build -t bot-vitola .
 
 ## Deploy with minikube and kubectl
 
+Add environment variables to `secret.yaml` then run:
 ```bash
 kubectl apply -f deploy/
 ```
