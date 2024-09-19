@@ -1,12 +1,16 @@
-import discord
 from commands import youtubeFunc, silenceFunc, tocarFunc
-import asyncio
-import os
-from Gemini import Gemini
-from datetime import timedelta
+from EmbedMessages import showYtQueue
 from discord.ext import commands
+from datetime import timedelta
+from Gemini import Gemini
+import asyncio
+import discord
+import glob
+import os
+
 
 from commands.silence import silenceMemberFunc
+from helper import write_error_log
 
 
 class DiscordBot:
@@ -132,6 +136,16 @@ class DiscordBot:
         async def youtube(ctx, link):
             await youtubeFunc(ctx, link, self)
             
+        @self.client.command()
+        async def showQueue(ctx):
+            if len(self.QUEUE) == 0:
+                embed = discord.Embed(
+                    title="Fila de reprodução",
+                    description="Nenhuma música na fila.",
+                    color=discord.Color.red(),
+                )
+                return await ctx.send(embed=embed)
+            await ctx.send(embed=showYtQueue(self.QUEUE))
 
         @self.client.command()
         async def gpt(ctx, message=" "):
@@ -182,7 +196,14 @@ class DiscordBot:
 
             await self.client.process_commands(message)
 
-        self.client.run(self.TOKEN)
+        try:
+            self.client.run(self.TOKEN)
+        except Exception as e:
+            write_error_log(e)
+            files = glob.glob('assets/tempAudios/*')
+            for f in files:
+                os.remove(f)
+            exit(1)
 
     async def call_next_in_QUEUE(self):
         next_command = self.QUEUE.pop(0)

@@ -3,6 +3,7 @@
 import os
 import discord
 import helper
+from EmbedMessages import ytEmbed
 from datetime import timedelta
 
 async def youtubeFunc(ctx, link, bot):
@@ -18,7 +19,7 @@ async def youtubeFunc(ctx, link, bot):
             await ctx.send('Saindo do canal de voz.')
             return
         else:
-            bot.QUEUE.append({"type": "youtube", "link": link, "ctx": ctx})
+            bot.QUEUE.append({"type": "youtube", "link": link, "ctx": ctx, "title": helper.get_yt_title(link), "thumbnail": helper.get_yt_thumbnail(link)})
             await ctx.send(
                 "Adicionado à fila. Será reproduzido quando o comando atual finalizar."
             )
@@ -27,15 +28,15 @@ async def youtubeFunc(ctx, link, bot):
     bot.IS_EXECUTING_COMMAND = True
     channel = ctx.author.voice.channel
     if channel is not None:
-        file_path, yt_title = helper.download_video(link)
+        file_path, yt_title,thumbnail = helper.download_video(link)
         if not os.path.isfile(file_path):
             await ctx.send("Download mal sucedido.")
             return
-
+        
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        await ctx.send(f"Tocando {yt_title}...")
+        await ctx.send(embed=ytEmbed(yt_title, link, thumbnail))
 
         bot.vc.play(
             discord.FFmpegPCMAudio(file_path), after=lambda e: print("done", e)
