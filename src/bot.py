@@ -26,7 +26,7 @@ class DiscordBot:
             "Adicionado à fila. Será reproduzido quando a musica atual finalizar."
         )
 
-    async def send_message_to_chat(client, message, channel_id):
+    async def send_message_to_chat(self, client, message, channel_id):
         channel = client.get_channel(channel_id)
         await channel.send(message)
 
