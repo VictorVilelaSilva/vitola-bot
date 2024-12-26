@@ -174,11 +174,11 @@ class DiscordBot:
             await ctx.send("Conversa com o vitola bot encerrada!")
 
         @self.client.command()
-        async def help(ctx):
+        async def comandos(ctx):
             embed = discord.Embed(
                 title="Lista de Comandos",
                 description="Aqui estão todos os comandos disponíveis:",
-                color=discord.Color.blue(),
+                color=discord.Color.red(),
             )
             embed.add_field(name="!chato <member>", value="Inicia uma votação para expulsar um membro da call.", inline=False)
             embed.add_field(name="!tocar", value="Toca uma música na call.", inline=False)
