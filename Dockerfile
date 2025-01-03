@@ -1,22 +1,31 @@
 FROM python:3.12-slim-bookworm
 
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-        bash \
-        curl \
-        build-essential \
-        ffmpeg
+# Instalar dependências do sistema (incluindo ffmpeg)
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    bash \
+    curl \
+    build-essential \
+    ffmpeg \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/app
-COPY . /opt/app
 
-RUN pip install --upgrade pip \
+# Primeiro copiar o requirements para aproveitar cache
+COPY requirements.txt requirements.txt
+
+# Instalar dependências Python
+RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Agora copiar todo o restante do código
+COPY . .
+
+# Criar usuário e dar permissão
 RUN useradd -ms /bin/bash botuser \
     && chown -R botuser:botuser /opt/app
 
 USER botuser
 
-SHELL ["/bin/bash", "-c"]
+# Rodar seu bot
 CMD [ "python", "src/main.py" ]
