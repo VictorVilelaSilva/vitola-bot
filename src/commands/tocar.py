@@ -17,7 +17,7 @@ async def tocarFunc(ctx,bot):
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        file_path = "assets/audios/lobinho.mp3"
+        file_path = os.path.join(os.getcwd(), "assets/audios/lobinho.mp3")
         if not os.path.isfile(file_path):
             await ctx.send("Arquivo não encontrado!")
             await bot.vc.disconnect()

@@ -6,11 +6,12 @@ def download_video(link):
     try:
         yt = YouTube(link)
         yt_title = yt.title
+        dest_dir = os.path.join(os.getcwd(), "assets/tempAudios/")
         ys = yt.streams.get_highest_resolution()
         ys = yt.streams.filter(only_audio=True).first()
 
         # Começa o download
-        arquivo = ys.download(output_path=get_audio_path(""))
+        arquivo = ys.download(output_path=dest_dir, filename=ys.default_filename)
         thumbnail = yt.thumbnail_url
 
         # troca o nome do arquivo para mp3
@@ -19,7 +20,9 @@ def download_video(link):
         if os.path.exists(novo_arquivo):
             return novo_arquivo, yt_title
         os.rename(arquivo, novo_arquivo)
-        dest_path = get_audio_path(os.path.basename(novo_arquivo))
+        dest_path = os.path.join(dest_dir, os.path.basename(novo_arquivo))
+        print(dest_path)
+
 
         print(f"\nDownload concluído! {dest_path}")
 
