@@ -28,3 +28,9 @@ class Gemini:
         })
         return model
     
+    def startImagemModel(self):
+        gemini.configure(api_key=self.apiKey)
+        model = gemini.ImageGenerationModel("imagen-3.0-generate-001")
+        return model
+    
+    

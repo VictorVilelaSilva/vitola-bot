@@ -6,7 +6,7 @@ import os
 
 from commands.chato import chatoFunc
 from commands.comandos import comandosFunc
-from commands.gpt import gptFunc
+from commands.gpt import geminiImageGen, gptFunc
 from commands.helpers.helper import write_error_log
 from commands.helpers.pathUtils import get_audio_path
 from commands.showQueue import showQueueFunc
@@ -99,8 +99,12 @@ class DiscordBot:
             await showQueueFunc(ctx, self)
 
         @self.client.command()
-        async def gpt(ctx, message=" "):
+        async def startConv(ctx, message=" "):
             await gptFunc(ctx, self, message)
+        
+        @self.client.command()
+        async def generateImagem(ctx, prompt=" "):
+            await geminiImageGen(ctx, self, prompt)
 
         @self.client.command()
         async def comandos(ctx):
