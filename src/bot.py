@@ -1,16 +1,18 @@
-from commands import youtubeFunc, silenceFunc, tocarFunc
-from EmbedMessages import showYtQueue
 from discord.ext import commands
 from datetime import timedelta
-from Gemini import Gemini
-import asyncio
 import discord
 import glob
 import os
 
-
-from commands.silence import silenceMemberFunc
-from helper import write_error_log
+from commands.chato import chatoFunc
+from commands.comandos import comandosFunc
+from commands.gpt import gptFunc
+from commands.helpers.helper import write_error_log
+from commands.helpers.pathUtils import get_audio_path
+from commands.showQueue import showQueueFunc
+from commands.silence import silenceFunc, silenceMemberFunc
+from commands.tocar import tocarFunc
+from commands.youtube import youtubeFunc
 
 
 class DiscordBot:
@@ -40,7 +42,7 @@ class DiscordBot:
 
         @self.client.event
         async def on_ready():
-            print(f"Estrou on the line {self.client.user}")
+            print(f"Vitola bot esta online {self.client.user}")
 
         @self.client.event
         async def on_voice_state_update(member, before, after):
@@ -53,7 +55,7 @@ class DiscordBot:
                     if self.vc is None or not self.vc.is_connected():
                         self.vc = await channel.connect()
 
-                    file_path = "assets/audios/lobinho.mp3"
+                    file_path = get_audio_path("lobinho.mp3")
                     if not os.path.isfile(file_path):
                         await self.send_message_to_chat(
                             self.client, "Arquivo não encontrado!", self.CODIGO_CHANNEL_TOKEN
@@ -75,51 +77,7 @@ class DiscordBot:
 
         @self.client.command()
         async def chato(ctx, member: discord.Member):
-            if member.voice is None:
-                await ctx.send(f"{member.name} não está em uma call.")
-                return
-
-            await ctx.send(
-                f"Vote no membro {member.name} para ser expulso da call. Reaja com 👍 para tirar ele da call ou com 👎 para não retirar ele da call"
-            )
-
-            votacao_msg = await ctx.send("Vote aqui!")
-            await asyncio.gather(
-                votacao_msg.add_reaction("👍"), votacao_msg.add_reaction("👎")
-            )
-
-            tempo_votacao = 6
-            await asyncio.sleep(tempo_votacao)
-
-            await ctx.send("Votação encerrada!")
-
-            votacao_msg = await ctx.fetch_message(votacao_msg.id)
-
-            reacoes = votacao_msg.reactions
-            votos_positivos = 0
-            votos_negativos = 0
-            for reacao in reacoes:
-                if reacao.emoji == "👍":
-                    votos_positivos = reacao.count
-                elif reacao.emoji == "👎":
-                    votos_negativos = reacao.count
-
-            if votos_positivos > votos_negativos:
-                try:
-                    await asyncio.gather(
-                        member.move_to(None),
-                        ctx.send(
-                            f"{member.name} foi removido da call com {votos_positivos} votos a favor e {votos_negativos} votos contra."
-                        ),
-                    )
-                except Exception as e:
-                    await ctx.send(
-                        f"Não foi possível remover {member.name} da call. Erro: {e}"
-                    )
-            else:
-                await ctx.send(
-                    f"{member.name} permanecerá na call. Votos a favor: {votos_positivos}, votos contra: {votos_negativos}"
-                )
+            await chatoFunc(ctx, self, member)
 
         @self.client.command()
         async def tocar(ctx):
@@ -138,57 +96,15 @@ class DiscordBot:
             
         @self.client.command()
         async def showQueue(ctx):
-            if len(self.QUEUE) == 0:
-                embed = discord.Embed(
-                    title="Fila de reprodução",
-                    description="Nenhuma música na fila.",
-                    color=discord.Color.red(),
-                )
-                return await ctx.send(embed=embed)
-            await ctx.send(embed=showYtQueue(self.QUEUE))
+            await showQueueFunc(ctx, self)
 
         @self.client.command()
         async def gpt(ctx, message=" "):
-            def check_author(m):
-                return m.author == ctx.author
-
-            if self.IS_EXECUTING_COMMAND:
-                await ctx.send("Bot ocupado no momento.")
-                return
-
-            self.IS_EXECUTING_COMMAND = True
-            chat = Gemini().startModel().start_chat(history=[])
-            prompt = message
-            await ctx.send(
-                'Sua conversa com o vitola bot vai começar! Digite "fim" para encerrar a conversa.'
-            )
-
-            while prompt != "fim":
-                response = chat.send_message(prompt)
-                await ctx.send(response.text)
-
-                prompt = await self.client.wait_for("message", check=check_author)
-                prompt = prompt.content
-
-            self.IS_EXECUTING_COMMAND = False
-            await ctx.send("Conversa com o vitola bot encerrada!")
+            await gptFunc(ctx, self, message)
 
         @self.client.command()
         async def comandos(ctx):
-            embed = discord.Embed(
-                title="Lista de Comandos",
-                description="Aqui estão todos os comandos disponíveis:",
-                color=discord.Color.red(),
-            )
-            embed.add_field(name="!chato <member>", value="Inicia uma votação para expulsar um membro da call.", inline=False)
-            embed.add_field(name="!tocar", value="Toca uma música na call.", inline=False)
-            embed.add_field(name="!silence [member]", value="Silencia um membro ou todos na call.", inline=False)
-            embed.add_field(name="!youtube <link> or !yt <link>", value="Adiciona uma música do youtube na fila de reprodução.", inline=False)
-            embed.add_field(name="!yt quit", value="Encerra a fila de reprodução.", inline=False)
-            embed.add_field(name="!yt next", value="Pula para a próxima música da fila.", inline=False)
-            embed.add_field(name="!showQueue", value="Mostra a fila de reprodução.", inline=False)
-            embed.add_field(name="!gpt [message]", value="Inicia uma conversa com o bot GPT.", inline=False)
-            await ctx.send(embed=embed)
+            await comandosFunc(ctx)
 
         @self.client.event
         async def on_message(message):

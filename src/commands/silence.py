@@ -2,7 +2,7 @@ import discord
 import os
 from datetime import timedelta
 
-from pathUtils import get_audio_path # Supondo que você criou em outro arquivo
+from commands.helpers.pathUtils import get_audio_path # Supondo que você criou em outro arquivo
 
 async def silenceMemberFunc(ctx, bot, member: discord.Member):
     if bot.IS_EXECUTING_COMMAND:

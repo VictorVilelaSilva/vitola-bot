@@ -2,8 +2,8 @@
 
 import os
 import discord
-import helper
-from EmbedMessages import ytEmbed
+import commands.helpers.helper as helper
+from commands.helpers.EmbedMessages import ytEmbed
 from datetime import timedelta
 
 async def youtubeFunc(ctx, link, bot):

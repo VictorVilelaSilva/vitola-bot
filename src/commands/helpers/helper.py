@@ -1,6 +1,6 @@
 import os
 from pytubefix import YouTube
-from pathUtils import get_audio_path
+from commands.helpers.pathUtils import get_audio_path
 
 def download_video(link):
     try:
