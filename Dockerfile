@@ -28,4 +28,4 @@ RUN useradd -ms /bin/bash botuser \
 USER botuser
 
 # Rodar seu bot
-CMD [ "python", "src/main.py" ]
+CMD [ "sh", "-c", "cd src && python main.py" ]
