@@ -1,5 +1,5 @@
 
-from commands.helpers.Gemini import Gemini
+from src.commands.helpers.Gemini import Gemini
 
 async def gptFunc(ctx, bot, message=" "):
     def check_author(m):

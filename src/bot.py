@@ -4,15 +4,15 @@ import discord
 import glob
 import os
 
-from commands.chato import chatoFunc
-from commands.comandos import comandosFunc
-from commands.gpt import gptFunc
-from commands.helpers.helper import write_error_log
-from commands.helpers.pathUtils import get_audio_path
-from commands.showQueue import showQueueFunc
-from commands.silence import silenceFunc, silenceMemberFunc
-from commands.tocar import tocarFunc
-from commands.youtube import youtubeFunc
+from src.commands.chato import chatoFunc
+from src.commands.comandos import comandosFunc
+from src.commands.gpt import gptFunc
+from src.commands.helpers.helper import write_error_log
+from src.commands.helpers.pathUtils import get_audio_path
+from src.commands.showQueue import showQueueFunc
+from src.commands.silence import silenceFunc, silenceMemberFunc
+from src.commands.tocar import tocarFunc
+from src.commands.youtube import youtubeFunc
 
 
 class DiscordBot:

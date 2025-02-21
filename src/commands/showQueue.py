@@ -1,6 +1,6 @@
 
 import discord
-from commands.helpers.EmbedMessages import showYtQueue
+from src.commands.helpers.EmbedMessages import showYtQueue
 
 async def showQueueFunc(ctx, bot):
     if len(bot.QUEUE) == 0:

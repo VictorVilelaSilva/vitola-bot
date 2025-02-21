@@ -2,7 +2,7 @@ import discord
 import os
 from datetime import timedelta
 
-from commands.helpers.pathUtils import get_audio_path # Supondo que você criou em outro arquivo
+from src.commands.helpers.pathUtils import get_audio_path # Supondo que você criou em outro arquivo
 
 async def silenceMemberFunc(ctx, bot, member: discord.Member):
     if bot.IS_EXECUTING_COMMAND:
@@ -49,7 +49,7 @@ async def silenceFunc(ctx, bot):
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        file_path = os.path.join(os.getcwd(), "assets/audios/silencer.mp3")
+        file_path = os.path.join(os.getcwd(), "src/assets/audios/silencer.mp3")
         print(file_path)
         if not os.path.isfile(file_path):
             await ctx.send("Arquivo não encontrado!")

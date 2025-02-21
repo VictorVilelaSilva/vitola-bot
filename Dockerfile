@@ -26,8 +26,6 @@ RUN useradd -ms /bin/bash vitolauser \
 
 USER vitolauser
 
-# Definir diretório de trabalho para a aplicação
-WORKDIR /opt/app/src
 
 # Comando para rodar o bot
 CMD ["python", "main.py"]

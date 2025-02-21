@@ -1,12 +1,11 @@
 import os
 from pytubefix import YouTube
-from commands.helpers.pathUtils import get_audio_path
 
 def download_video(link):
     try:
         yt = YouTube(link)
         yt_title = yt.title
-        dest_dir = os.path.join(os.getcwd(), "assets/tempAudios/")
+        dest_dir = os.path.join(os.getcwd(), "src/assets/tempAudios/")
         ys = yt.streams.get_highest_resolution()
         ys = yt.streams.filter(only_audio=True).first()
 

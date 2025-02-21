@@ -1,4 +1,4 @@
-from bot import DiscordBot
+from src.bot import DiscordBot
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
