@@ -22,10 +22,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY . .
 
 # Criar usuário e dar permissão
-RUN useradd -ms /bin/bash botuser \
-    && chown -R botuser:botuser /opt/app
+RUN useradd -ms /bin/bash vitolauser \
+    && chown -R vitolauser:vitolauser /opt/app
 
-USER botuser
+USER vitolauser
 
 # Rodar seu bot
 CMD [ "sh", "-c", "cd src && python main.py" ]
