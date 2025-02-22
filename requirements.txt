@@ -1,5 +1,5 @@
 google-generativeai
 discord
-pytubefix
+pytubefix==8.11.0
 python-dotenv
 PyNaCl
