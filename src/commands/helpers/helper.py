@@ -3,7 +3,7 @@ from pytubefix import YouTube
 
 def download_video(link):
     try:
-        yt = YouTube(link,client="WEB")
+        yt = YouTube(link,use_po_token=True)
         yt_title = yt.title
         dest_dir = os.path.join(os.getcwd(), "src/assets/tempAudios/")
         ys = yt.streams.get_highest_resolution()
