@@ -4,20 +4,17 @@ import discord
 import glob
 import os
 
-from src.commands.chato import chatoFunc
-from src.commands.comandos import comandosFunc
-from src.commands.gpt import gptFunc
-from src.commands.helpers.helper import write_error_log
-from src.commands.helpers.pathUtils import get_audio_path
-from src.commands.showQueue import showQueueFunc
 from src.commands.silence import silenceFunc, silenceMemberFunc
-from src.commands.tocar import tocarFunc
+from src.commands.helpers.pathUtils import get_audio_path
+from src.commands.helpers.helper import write_error_log
+from src.commands.showQueue import showQueueFunc
 from src.commands.youtube import youtubeFunc
+from src.commands.tocar import tocarFunc
+from discord.ext import commands
 
 
 class DiscordBot:
     def __init__(self):
-        self.client = None
         self.QUEUE: list = []
         self.vc: discord.VoiceChannel = None
         self.IS_EXECUTING_COMMAND: bool = False
@@ -27,15 +24,13 @@ class DiscordBot:
         self.QUEUE_MESSAGE = (
             "Adicionado à fila. Será reproduzido quando a musica atual finalizar."
         )
+        self.client = None
 
     async def send_message_to_chat(self, client, message, channel_id):
         channel = client.get_channel(channel_id)
         await channel.send(message)
 
-    def run_discord_bot(self):
-        if self.TOKEN is None:
-            print("Insira o DISCORD_TOKEN no arquivo .env")
-            exit(1)
+    def init_bot(self):
         intents = discord.Intents.default()
         intents.message_content = True
         self.client = commands.Bot(command_prefix="!", intents=intents)
@@ -75,37 +70,6 @@ class DiscordBot:
                     self.IS_EXECUTING_COMMAND = False
                     await self.vc.disconnect()
 
-        @self.client.command()
-        async def chato(ctx, member: discord.Member):
-            await chatoFunc(ctx, self, member)
-
-        @self.client.command()
-        async def tocar(ctx):
-            await tocarFunc(ctx, self)
-
-        @self.client.command()
-        async def silence(ctx,member: discord.Member = None):
-            if member is None:
-                await silenceFunc(ctx, self)
-                return
-            await silenceMemberFunc(ctx, self, member)
-
-        @self.client.command(aliases=["yt"])
-        async def youtube(ctx, link):
-            await youtubeFunc(ctx, link, self)
-            
-        @self.client.command()
-        async def showQueue(ctx):
-            await showQueueFunc(ctx, self)
-
-        @self.client.command()
-        async def gpt(ctx, message=" "):
-            await gptFunc(ctx, self, message)
-
-        @self.client.command()
-        async def comandos(ctx):
-            await comandosFunc(ctx)
-
         @self.client.event
         async def on_message(message):
             if message.author == self.client.user:
@@ -129,8 +93,12 @@ class DiscordBot:
 
             await self.client.process_commands(message)
 
+        return self.client
+
+    def run_discord_bot(self):
+        bot = self.init_bot()
         try:
-            self.client.run(self.TOKEN)
+            bot.run(self.TOKEN)
         except Exception as e:
             write_error_log(e)
             files = glob.glob('assets/tempAudios/*')
