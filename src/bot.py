@@ -10,7 +10,7 @@ from src.commands.helpers.helper import write_error_log
 from src.commands.showQueue import showQueueFunc
 from src.commands.youtube import youtubeFunc
 from src.commands.tocar import tocarFunc
-from discord.ext import commands
+from src.commands.onVoiceUpdate import handle_on_voice_update
 
 
 class DiscordBot:
@@ -44,31 +44,8 @@ class DiscordBot:
             if len(self.QUEUE):
                 return
             if before.channel is None and after.channel is not None:
-                if member.name == "humberto_cunha":
-                    self.IS_EXECUTING_COMMAND = True
-                    channel = after.channel
-                    if self.vc is None or not self.vc.is_connected():
-                        self.vc = await channel.connect()
-
-                    file_path = get_audio_path("lobinho.mp3")
-                    if not os.path.isfile(file_path):
-                        await self.send_message_to_chat(
-                            self.client, "Arquivo não encontrado!", self.CODIGO_CHANNEL_TOKEN
-                        )
-                        await self.vc.disconnect()
-                        return
-
-                    self.vc.play(
-                        discord.FFmpegPCMAudio(file_path),
-                        after=lambda e: print("done", e),
-                    )
-                    while self.vc.is_playing():
-                        await discord.utils.sleep_until(
-                            discord.utils.utcnow() + timedelta(seconds=1)
-                        )
-
-                    self.IS_EXECUTING_COMMAND = False
-                    await self.vc.disconnect()
+                if await handle_on_voice_update(self, member, after):
+                    return
 
         @self.client.event
         async def on_message(message):
