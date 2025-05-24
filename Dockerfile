@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Instalar dependências do sistema (incluindo ffmpeg)
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    apt-get install -y nodejs \
     bash curl build-essential ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
