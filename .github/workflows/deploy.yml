@@ -1,0 +1,66 @@
+name: Deploy Crypto-bot to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY_URL: docker.io
+  REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+  IMAGE_NAME: docker.io/${{ secrets.REGISTRY_USER }}/vitola-bot:${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY_URL }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Build and Push image
+        run: |
+          docker build --pull -t ${{ env.IMAGE_NAME }} .
+          docker push ${{ env.IMAGE_NAME }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug IMAGE_NAME
+        run: echo "IMAGE_NAME = ${{ env.IMAGE_NAME }}"
+
+      - name: SSH to VPS & Deploy
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            set -e
+            cd ~/projects/vitola-bot
+
+            chmod 644 .env
+            chown $USER:$USER .env
+
+            docker pull ${{ env.IMAGE_NAME }}
+
+            OLD_CONTAINER=$(docker ps -q --filter "name=vitola-bot")
+            
+            if [ ! -z "$OLD_CONTAINER" ]; then
+              docker stop $OLD_CONTAINER
+              docker rm $OLD_CONTAINER
+            fi
+       
+            docker run -d \
+              --restart unless-stopped \
+              --name vitola-bot \
+              --env-file .env \
+              -v $PWD/.env:/opt/app/.env \
+              ${{ env.IMAGE_NAME }}
+
+            docker ps | grep vitola-bot
