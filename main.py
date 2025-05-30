@@ -12,7 +12,7 @@ async def setup():
 
     # Carregue as extensões de forma assíncrona
     await bot.load_extension("src.cogs.music")
-    #await bot.load_extension("src.cogs.chat")
+    await bot.load_extension("src.cogs.chat")
     # ...carregue mais Cogs aqui...
 
     return bot, bot_instance
