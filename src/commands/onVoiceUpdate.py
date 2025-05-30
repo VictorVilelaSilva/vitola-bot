@@ -9,7 +9,7 @@ async def handle_on_voice_update(bot, member, after):
         "gustavotoaiari": "Gustavo.mp3",
         "brunodss": "Bruno.mp3",
         "dino.l": "Dino.mp3",
-        "vitolaapenas": "Victor.mp3",
+        #"vitolaapenas": "Victor.mp3",
     }
     filename = audio_map.get(member.name)
     if not filename:
