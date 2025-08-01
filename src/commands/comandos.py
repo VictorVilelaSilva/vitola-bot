@@ -15,4 +15,5 @@ async def comandosFunc(ctx):
     embed.add_field(name="!yt next", value="Pula para a próxima música da fila.", inline=False)
     embed.add_field(name="!showQueue", value="Mostra a fila de reprodução.", inline=False)
     embed.add_field(name="!gpt [message]", value="Inicia uma conversa com o bot GPT.", inline=False)
+    embed.add_field(name="!ripita", value="Toca audio do luva de pedreiro.", inline=False)
     await ctx.send(embed=embed)

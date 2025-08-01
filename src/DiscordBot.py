@@ -1,5 +1,4 @@
 from discord.ext import commands
-from datetime import timedelta
 import discord
 import glob
 import os

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
-from src.bot import DiscordBot
+from src.DiscordBot import DiscordBot
 import asyncio
 
 async def setup():

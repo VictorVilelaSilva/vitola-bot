@@ -1,3 +1,4 @@
+from src.commands.ripita import ripitaFunc
 from src.commands.silence import silenceFunc, silenceMemberFunc
 from src.commands.showQueue import showQueueFunc
 from src.commands.youtube import youtubeFunc
@@ -18,6 +19,10 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def tocar(self, ctx):
         await tocarFunc(ctx, self.bot_instance)
+        
+    @commands.command()
+    async def ripita(self, ctx):
+        await ripitaFunc(ctx, self.bot_instance)
 
     @commands.command(aliases=["yt"])
     async def youtube(self, ctx, link):
