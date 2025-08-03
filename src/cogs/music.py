@@ -1,4 +1,4 @@
-from src.commands.ripita import ripitaFunc
+from src.commands.playAudio import play_audio
 from src.commands.silence import silenceFunc, silenceMemberFunc
 from src.commands.showQueue import showQueueFunc
 from src.commands.youtube import youtubeFunc
@@ -18,11 +18,11 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def tocar(self, ctx):
-        await tocarFunc(ctx, self.bot_instance)
+        await play_audio(ctx, self.bot_instance,'lobinho.mp3')
         
     @commands.command()
     async def ripita(self, ctx):
-        await ripitaFunc(ctx, self.bot_instance)
+        await play_audio(ctx, self.bot_instance,'ripita.mp3')
 
     @commands.command(aliases=["yt"])
     async def youtube(self, ctx, link):

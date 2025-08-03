@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 
-async def ripitaFunc(ctx,bot):
+async def play_audio(ctx,bot, audio_file):
     if bot.IS_EXECUTING_COMMAND:
         bot.QUEUE.append({"type": "ripita", "ctx": ctx})
         await ctx.send(
@@ -17,7 +17,7 @@ async def ripitaFunc(ctx,bot):
         if bot.vc is None or not bot.vc.is_connected():
             bot.vc = await channel.connect()
 
-        file_path = os.path.join(os.getcwd(), "src/assets/audios/ripita.mp3")
+        file_path = os.path.join(os.getcwd(), f"src/assets/audios/{audio_file}")
         if not os.path.isfile(file_path):
             await ctx.send("Arquivo não encontrado!")
             await bot.vc.disconnect()
