@@ -23,6 +23,10 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def ripita(self, ctx):
         await play_audio(ctx, self.bot_instance,'ripita.mp3')
+        
+    @commands.command()
+    async def autismo(self, ctx):
+        await play_audio(ctx, self.bot_instance,'autismo.mp3')
 
     @commands.command(aliases=["yt"])
     async def youtube(self, ctx, link):
