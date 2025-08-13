@@ -3,9 +3,10 @@ FROM python:3.12-slim-bookworm
 # Variável de ambiente para saída do Python
 ENV PYTHONUNBUFFERED=1
 
-# Instalar dependências do sistema (incluindo ffmpeg)
+# Instalar dependências do sistema (incluindo ffmpeg e libs necessárias)
 RUN apt-get update && apt-get install --no-install-recommends -y \
     bash curl build-essential ffmpeg \
+    libffi-dev libnacl-dev python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/app
@@ -25,7 +26,6 @@ RUN useradd -ms /bin/bash vitolauser \
     && chown -R vitolauser:vitolauser /opt/app
 
 USER vitolauser
-
 
 # Comando para rodar o bot
 CMD ["python", "main.py"]
