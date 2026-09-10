@@ -3,3 +3,10 @@ deploy
 *.md
 venv/
 .env
+.git/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+tests/
+src/assets/tempAudios/

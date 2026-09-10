@@ -1,23 +1,53 @@
-from dotenv import load_dotenv
-load_dotenv()
-from src.DiscordBot import DiscordBot
 import asyncio
+import logging
+import signal
 
-async def setup_extensions(bot):
-    # Carregue as extensões de forma assíncrona
-    await bot.load_extension("src.cogs.music")
-    await bot.load_extension("src.cogs.chat")
+from dotenv import load_dotenv
+
+from src.config import Settings
+from src.DiscordBot import DiscordBot
+
+
+async def run_bot(settings: Settings):
+    async with DiscordBot(settings) as bot:
+        task = asyncio.create_task(bot.start(settings.discord_token))
+        loop = asyncio.get_running_loop()
+        terminated = False
+
+        def terminate():
+            nonlocal terminated
+            terminated = True
+            task.cancel()
+
+        handler_installed = False
+        try:
+            try:
+                loop.add_signal_handler(signal.SIGTERM, terminate)
+                handler_installed = True
+            except NotImplementedError:
+                # Windows still receives graceful Ctrl+C handling from asyncio.run.
+                pass
+            await task
+        except asyncio.CancelledError:
+            if not terminated:
+                raise
+        finally:
+            if handler_installed:
+                loop.remove_signal_handler(signal.SIGTERM)
+            # The bot context unloads Cogs before closing its HTTP session.
+
 
 def main():
-    bot_instance = DiscordBot()
-    bot = bot_instance.init_bot()
-    
-    bot.bot_instance = bot_instance
-    
-    asyncio.run(setup_extensions(bot))
-    
-    print("Running bot...")
-    bot.run(bot_instance.TOKEN)
+    load_dotenv()
+    settings = Settings.from_env()
+    if not settings.discord_token:
+        raise SystemExit("Configure DISCORD_TOKEN no arquivo .env.")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    asyncio.run(run_bot(settings))
+
 
 if __name__ == "__main__":
     main()

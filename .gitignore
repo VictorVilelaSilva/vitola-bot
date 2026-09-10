@@ -1,6 +1,9 @@
 venv
 .env
 __pycache__
+.pytest_cache/
+.ruff_cache/
+.venv/
 .vscode
 src/assets/tempAudios/*
 teste.py

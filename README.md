@@ -24,6 +24,12 @@ O Vitola Bot é como aquele amigo que sempre anima a festa - só que ele nunca p
 
 ### Pré-requisitos (porque nem tudo na vida é fácil)
 
+Use Python 3.12. No Discord Developer Portal, habilite **Message Content Intent**
+para os comandos com prefixo `!`. Convide o bot com as permissões de ver canais,
+enviar mensagens, inserir links, adicionar reações, ler histórico, conectar e falar.
+Para `!silence`, conceda **Silenciar membros**; para `!chato`, **Mover membros**.
+A formatação automática também precisa de **Gerenciar mensagens** no canal configurado.
+
 #### Windows 🪟
 Baixe e instale o [FFmpeg](https://ffmpeg.org/download.html). Sim, você precisa disso, não é opcional, e não, o bot não vai funcionar sem isso.
 
@@ -60,9 +66,9 @@ pip install -r requirements.txt
 4. **Crie um arquivo .env** com os segredos mágicos:
 ```
 DISCORD_TOKEN=seu_token_super_secreto
-CHANNEL_TOKEN=id_do_canal
 CODIGO_DISCORD_CHANNEL_ID_TOKEN=id_do_canal_para_codigos
-GEMINI_KEY=sua_chave_da_gemini_api
+GEMINI_API_KEY=sua_chave_da_gemini_api
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
 5. **Invoque o bot**:
@@ -74,7 +80,7 @@ python main.py
 
 ```bash
 docker build -t bot-vitola .
-docker run -d --name vitola-bot bot-vitola
+docker run -d --name vitola-bot --env-file .env bot-vitola
 ```
 
 ## ☸️ Para os Super Nerds do Kubernetes
@@ -86,10 +92,30 @@ kubectl apply -f deploy/
 
 ## 👾 Comandos (Ou "Como Fazer o Bot Obedecer")
 
-- `!tocar` - Toca um áudio aleatório ou específico.
+- `!tocar` - Toca o áudio do lobinho.
 - `!youtube` ou `!yt [link]` - Reproduz música do YouTube.
 - `!showQueue` - Mostra a fila de reprodução (para ver quanto tempo ainda falta para tocar sua música).
 - `!silence` - Quando o silêncio fala mais alto que palavras.
+
+## Estrutura e desenvolvimento
+
+O bot usa uma subclasse de `commands.Bot`, Cogs por funcionalidade e players
+independentes por servidor. A IA usa `google-genai` com sessões por canal e usuário.
+Veja [a arquitetura e as regras dos comandos](docs/architecture.md).
+
+Copie `.env.example` para `.env` para configurar os limites. A chave Gemini é
+opcional: sem ela, os demais comandos continuam disponíveis.
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest -q
+python -m ruff check .
+python -m ruff format --check .
+```
+
+`!help` ou `!comandos` mostra os comandos. Use `!yt next` para pular, `!yt quit`
+para limpar a fila e sair, e `!fim` para cancelar sua conversa com a IA.
+`!silence` exige permissão de silenciar; `!chato` exige permissão de mover membros.
 
 ## ⚠️ Avisos Importantes
 
