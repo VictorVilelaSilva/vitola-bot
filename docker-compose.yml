@@ -1,0 +1,13 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vitola-bot:latest
+    container_name: vitola-bot
+    env_file:
+      - .env
+    # O bot encerra a reprodução e fecha a sessão HTTP no SIGTERM (ver
+    # docs/architecture.md); 60s dão folga para isso antes do SIGKILL.
+    stop_grace_period: 60s
+    restart: unless-stopped

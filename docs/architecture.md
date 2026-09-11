@@ -93,8 +93,10 @@ APIs externas simulados. Cobrem filas mistas, isolamento de servidores e sessõe
 permissões, restauração de mute, cancelamento, limites, downloads e inicialização.
 Não usam tokens nem acessam servidores Discord ou a API Gemini.
 
-O workflow de deploy aguarda a conclusão desses testes antes de construir e
-publicar a imagem.
+O workflow de deploy aguarda a conclusão desses testes antes de entrar no VPS
+por SSH, atualizar o repositório e reconstruir a imagem lá mesmo com
+`docker compose up -d --build`. Não há registry no caminho. O preparo do VPS
+está em [deploy.md](deploy.md).
 
 Referências:
 - [Cogs do discord.py](https://discordpy.readthedocs.io/en/stable/ext/commands/cogs.html)
