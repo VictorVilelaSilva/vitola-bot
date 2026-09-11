@@ -10,6 +10,14 @@ from src.utils import require_voice
 log = logging.getLogger(__name__)
 
 
+def require_voice_check(*permissions):
+    async def predicate(ctx):
+        require_voice(ctx, *permissions)
+        return True
+
+    return commands.check(predicate)
+
+
 def validate_target(ctx, member, channel):
     if member.guild.id != ctx.guild.id or not member.voice or member.voice.channel != channel:
         raise commands.CheckFailure("O membro precisa estar no mesmo canal de voz que você.")
@@ -124,6 +132,7 @@ class ModerationCog(commands.Cog, name="Moderação"):
         help="Silencia temporariamente um membro ou os participantes elegíveis da sua chamada."
     )
     @commands.guild_only()
+    @require_voice_check("mute_members")
     @commands.cooldown(1, 15, commands.BucketType.guild)
     async def silence(self, ctx, member: discord.Member | None = None):
         channel = require_voice(ctx, "mute_members")
@@ -153,6 +162,7 @@ class ModerationCog(commands.Cog, name="Moderação"):
         help="Abre votação de 15s para desconectar um membro da chamada. Exige Mover membros."
     )
     @commands.guild_only()
+    @require_voice_check("move_members")
     @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
     async def chato(self, ctx, member: discord.Member):
