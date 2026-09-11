@@ -79,9 +79,23 @@ python main.py
 ## 🐳 Para os Nerds do Docker
 
 ```bash
-docker build -t bot-vitola .
-docker run -d --name vitola-bot --env-file .env bot-vitola
+docker compose up -d --build
 ```
+
+O compose lê o `.env` da raiz do projeto. Para acompanhar: `docker compose logs -f`.
+
+### 🚀 Deploy no VPS
+
+O workflow `Deploy Vitola Bot to VPS` roda a cada push na `main`: espera os
+testes, entra no VPS por SSH, atualiza o repositório em `~/projects/vitola-bot`
+e sobe o container com `docker compose up -d --build`. A imagem é construída no
+próprio VPS, sem registry (nada de Docker Hub).
+
+Secrets necessários: `VPS_HOST`, `VPS_USER` e `VPS_SSH_KEY` (chave privada), os
+mesmos nomes usados nos outros projetos do VPS. O passo a passo do que preparar
+no servidor está em [docs/deploy.md](docs/deploy.md). No VPS, basta existir
+a pasta `~/projects/vitola-bot` com um `.env` válido — o resto (git e build) o
+workflow resolve sozinho.
 
 ## ☸️ Para os Super Nerds do Kubernetes
 

@@ -1,71 +1,62 @@
-name: Deploy Crypto-bot to VPS
+name: Deploy Vitola Bot to VPS
 
 on:
   push:
     branches: [ main ]
-
-env:
-  REGISTRY_URL: docker.io
-  REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
-  IMAGE_NAME: docker.io/${{ secrets.REGISTRY_USER }}/vitola-bot:${{ github.sha }}
+  workflow_dispatch:
 
 jobs:
   validate:
     uses: ./.github/workflows/test.yml
 
-  build-and-push:
+  deploy:
     needs: validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY_URL }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
-
-      - name: Build and Push image
-        run: |
-          docker build --pull -t ${{ env.IMAGE_NAME }} .
-          docker push ${{ env.IMAGE_NAME }}
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug IMAGE_NAME
-        run: echo "IMAGE_NAME = ${{ env.IMAGE_NAME }}"
-
       - name: SSH to VPS & Deploy
         uses: appleboy/ssh-action@v1.2.1
         with:
-          host: ${{ secrets.VPS_IP }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
-            cd ~/projects/vitola-bot
 
-            chmod 644 .env
-            chown $USER:$USER .env
+            APP_DIR="$HOME/projects/vitola-bot"
+            REPO_URL="https://github.com/VictorVilelaSilva/vitola-bot.git"
 
-            docker pull ${{ env.IMAGE_NAME }}
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
 
-            OLD_CONTAINER=$(docker ps -q --filter "name=vitola-bot")
-            
-            if [ ! -z "$OLD_CONTAINER" ]; then
-              docker stop $OLD_CONTAINER
-              docker rm $OLD_CONTAINER
+            # A pasta já existe no VPS com o .env, então inicializamos o git
+            # dentro dela em vez de clonar por cima.
+            if [ ! -d .git ]; then
+              git init -b main
+              git remote add origin "$REPO_URL"
             fi
-       
-            docker run -d \
-              --restart unless-stopped \
-              --stop-timeout 60 \
-              --name vitola-bot \
-              --env-file .env \
-              -v $PWD/.env:/opt/app/.env \
-              ${{ env.IMAGE_NAME }}
 
-            docker ps | grep vitola-bot
+            git fetch --depth 1 origin main
+            # .env e src/assets/tempAudios estão no .gitignore: reset e clean
+            # (sem -x) não os removem.
+            git reset --hard FETCH_HEAD
+            git clean -fd
+
+            if [ ! -f .env ]; then
+              echo "ERRO: $APP_DIR/.env nao encontrado no VPS." >&2
+              exit 1
+            fi
+            chmod 600 .env
+
+            # Container do deploy antigo (docker run a partir do Docker Hub)
+            # não tem labels do compose e ocuparia o nome vitola-bot.
+            LEGACY=$(docker ps -aq --filter "name=^vitola-bot$")
+            if [ -n "$LEGACY" ] && \
+               [ -z "$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$LEGACY")" ]; then
+              echo "Removendo container legado vitola-bot..."
+              docker rm -f "$LEGACY"
+            fi
+
+            docker compose up -d --build
+            docker image prune -f
+            docker compose ps
