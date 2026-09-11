@@ -174,7 +174,8 @@ class GuildPlayer:
             async with track.effect() if track.effect else no_effect():
                 try:
                     voice.play(source, after=after)
-                    await self._notify(track, f"Tocando: {track.title[:200]}")
+                    if track.url:
+                        await self._notify(track, f"Tocando: {track.title[:200]}")
                     async with asyncio.timeout(self.settings.max_audio_seconds + 30):
                         while not finished.done():
                             try:

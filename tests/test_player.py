@@ -81,6 +81,40 @@ async def test_skip_empty_and_last_track_are_safe(player, context):
         await instance.close()
 
 
+async def test_local_audio_does_not_announce_internal_filename(player, context):
+    instance, audio, _ = player
+    try:
+        instance.enqueue(
+            AudioTrack(
+                "silencer.mp3",
+                context.voice_channel,
+                destination=context.channel,
+                path=audio,
+            )
+        )
+        await asyncio.wait_for(instance.queue.join(), 2)
+        context.channel.send.assert_not_called()
+    finally:
+        await instance.close()
+
+
+async def test_youtube_audio_announces_downloaded_title(player, context):
+    instance, _, _ = player
+    try:
+        instance.enqueue(
+            AudioTrack(
+                "https://www.youtube.com/watch?v=abcdefghijk",
+                context.voice_channel,
+                destination=context.channel,
+                url="good",
+            )
+        )
+        await asyncio.wait_for(instance.queue.join(), 2)
+        assert context.channel.send.await_args.args[0] == "Tocando: YouTube title"
+    finally:
+        await instance.close()
+
+
 async def test_stop_clears_pending_and_runs_effect_cleanup(player, context):
     instance, audio, voice = player
     voice.auto_finish = False

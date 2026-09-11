@@ -22,6 +22,8 @@ async def test_startup_loads_cogs_and_preserves_command_names_without_login():
             "rj",
             "youtube",
             "yt",
+            "video",
+            "baixarvideo",
             "showQueue",
             "silence",
             "chato",

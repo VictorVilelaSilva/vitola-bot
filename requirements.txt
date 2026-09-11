@@ -1,4 +1,5 @@
 discord.py[voice]==2.7.1
+deno==2.9.6
 google-genai==2.23.0
-pytubefix==11.1.0
 python-dotenv==1.2.3
+yt-dlp[default]==2026.8.19

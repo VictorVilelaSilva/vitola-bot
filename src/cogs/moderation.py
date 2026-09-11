@@ -21,16 +21,8 @@ def require_voice_check(*permissions):
 def validate_target(ctx, member, channel):
     if member.guild.id != ctx.guild.id or not member.voice or member.voice.channel != channel:
         raise commands.CheckFailure("O membro precisa estar no mesmo canal de voz que você.")
-    if member.bot or member.id == ctx.guild.owner_id:
-        raise commands.CheckFailure("Não posso aplicar essa ação a bots ou ao dono do servidor.")
-    if member.top_role >= ctx.guild.me.top_role:
-        raise commands.CheckFailure("Meu cargo precisa estar acima do cargo do membro.")
-    if (
-        ctx.author.id != ctx.guild.owner_id
-        and member.id != ctx.author.id
-        and member.top_role >= ctx.author.top_role
-    ):
-        raise commands.CheckFailure("Você só pode moderar membros com cargo inferior ao seu.")
+    if member.bot:
+        raise commands.CheckFailure("Não posso aplicar essa ação a bots.")
 
 
 class VoteView(discord.ui.View):
@@ -132,7 +124,6 @@ class ModerationCog(commands.Cog, name="Moderação"):
         help="Silencia temporariamente um membro ou os participantes elegíveis da sua chamada."
     )
     @commands.guild_only()
-    @commands.has_permissions(mute_members=True)
     @require_voice_check("mute_members")
     @commands.cooldown(1, 15, commands.BucketType.guild)
     async def silence(self, ctx, member: discord.Member | None = None):
@@ -163,7 +154,6 @@ class ModerationCog(commands.Cog, name="Moderação"):
         help="Abre votação de 15s para desconectar um membro da chamada. Exige Mover membros."
     )
     @commands.guild_only()
-    @commands.has_permissions(move_members=True)
     @require_voice_check("move_members")
     @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.max_concurrency(1, per=commands.BucketType.guild, wait=False)
