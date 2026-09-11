@@ -124,6 +124,21 @@ async def test_missing_api_key_does_not_create_session(context):
     assert not cog.sessions
 
 
+async def test_commands_sends_styled_embed_with_video_command(context):
+    cog = make_cog(context)
+
+    await cog.comandos.callback(cog, context)
+
+    embed = context.send.await_args.kwargs["embed"]
+    assert embed.title == "🤖 Central de comandos do Vitola"
+    assert embed.color.value != 0
+    help_text = "\n".join(field.value for field in embed.fields)
+    assert "!video <link>" in help_text
+    assert "!baixarvideo <link>" in help_text
+    assert "!yt <link>" in help_text
+    assert embed.footer.text == "Use !help <comando> para ver mais detalhes."
+
+
 async def test_gemini_service_uses_async_client_and_configured_model(monkeypatch):
     async_client = SimpleNamespace(
         chats=SimpleNamespace(create=Mock(return_value="chat")), aclose=AsyncMock()

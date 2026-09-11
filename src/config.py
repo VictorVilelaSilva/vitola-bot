@@ -18,6 +18,7 @@ class Settings:
     queue_size: int = 20
     max_audio_seconds: int = 900
     max_download_bytes: int = 50 * 1024 * 1024
+    max_video_bytes: int = 10 * 1024 * 1024
     download_timeout: int = 90
     chat_idle_timeout: int = 120
     chat_request_timeout: int = 45
@@ -35,6 +36,7 @@ class Settings:
             queue_size=positive_int("AUDIO_QUEUE_SIZE", 20),
             max_audio_seconds=positive_int("MAX_AUDIO_SECONDS", 900),
             max_download_bytes=positive_int("MAX_DOWNLOAD_MB", 50) * 1024 * 1024,
+            max_video_bytes=positive_int("MAX_VIDEO_MB", 10) * 1024 * 1024,
             download_timeout=positive_int("DOWNLOAD_TIMEOUT", 90),
             chat_idle_timeout=positive_int("CHAT_IDLE_TIMEOUT", 120),
             chat_request_timeout=positive_int("CHAT_REQUEST_TIMEOUT", 45),

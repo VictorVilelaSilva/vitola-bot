@@ -13,7 +13,7 @@ com o Discord.
   consumidor por servidor, com cancelamento de cada faixa.
 - src/services/youtube.py: validação de links, limite de downloads simultâneos,
   subprocessos com timeout e diretórios temporários exclusivos.
-- src/services/youtube_worker.py: consultas e downloads síncronos do pytubefix,
+- src/services/youtube_worker.py: consultas e downloads síncronos do yt-dlp,
   executados somente no subprocesso. O arquivo mantém seu formato original.
 - src/cogs/moderation.py: permissões, hierarquia, votação e restauração do mute.
 - src/cogs/chat.py: sessões de IA por servidor, canal e usuário.
@@ -41,6 +41,13 @@ Downloads têm limite padrão de 15 minutos de duração, 50 MiB por arquivo e
 90 segundos de execução, com até dois downloads simultâneos. O limite de
 concorrência é liberado antes da reprodução. Timeout, cancelamento e término
 normal removem os arquivos temporários. Nenhum download encerra o processo do bot.
+
+!video aceita qualquer URL HTTP/HTTPS, deixa o yt-dlp identificar a plataforma,
+baixa uma versão com áudio, preferencialmente MP4, e envia o anexo no canal de texto
+da solicitação. Links incompatíveis, privados ou sem vídeo recebem uma mensagem de
+erro padrão. O limite padrão é 10 MiB e nunca ultrapassa o limite de anexos informado
+pelo servidor Discord. O yt-dlp usa Deno e yt-dlp-ejs para resolver os desafios
+JavaScript atuais do YouTube.
 
 ## Moderação
 

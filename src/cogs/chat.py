@@ -126,7 +126,52 @@ class ChatCog(commands.Cog, name="Conversa"):
 
     @commands.command(help="Mostra os comandos disponíveis.")
     async def comandos(self, ctx):
-        await ctx.send_help()
+        embed = discord.Embed(
+            title="🤖 Central de comandos do Vitola",
+            description="Escolha uma categoria e use o prefixo `!` para chamar o bot.",
+            color=discord.Color.red(),
+        )
+        embed.add_field(
+            name="🎵 Música",
+            value=(
+                "`!yt <link>` — adiciona o áudio do YouTube à fila\n"
+                "`!yt next` — pula o áudio atual\n"
+                "`!yt quit` — limpa a fila e desconecta\n"
+                "`!fila` — mostra a fila de reprodução"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🎬 Download",
+            value=(
+                "`!video <link>` — baixa vídeos de plataformas compatíveis\n"
+                "Alias: `!baixarvideo <link>` • limite padrão de 10 MiB"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🔊 Áudios rápidos",
+            value="`!tocar` • `!ripita` • `!autismo` • `!bahiano` • `!rj`",
+            inline=False,
+        )
+        embed.add_field(
+            name="🛡️ Moderação",
+            value=(
+                "`!silence [@membro]` — silencia um membro ou toda a chamada\n"
+                "`!chato @membro` — abre votação para remover da chamada"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🧠 Inteligência artificial",
+            value=(
+                "`!gpt [mensagem]` — inicia uma conversa neste canal\n"
+                "`!fim` — encerra sua conversa atual"
+            ),
+            inline=False,
+        )
+        embed.set_footer(text="Use !help <comando> para ver mais detalhes.")
+        await ctx.send(embed=embed)
 
     async def cog_unload(self):
         tasks = list(self.sessions.values())

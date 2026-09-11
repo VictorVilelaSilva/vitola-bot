@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import discord
 import pytest
@@ -65,25 +66,66 @@ async def test_permissions_rechecked_when_queued_mute_starts(context):
     context.target.edit.assert_not_called()
 
 
-async def test_commands_reject_callers_without_moderation_permissions(context):
+async def test_commands_ignore_unrelated_text_channel_permissions(context):
     context.permissions = discord.Permissions.none()
-    context.channel.permissions_for = lambda member: (
-        discord.Permissions.all() if member is context.me else discord.Permissions.none()
-    )
     for command in (ModerationCog.silence, ModerationCog.chato):
-        with pytest.raises(commands.MissingPermissions):
-            for check in command.checks:
-                await discord.utils.maybe_coroutine(check, context)
+        for check in command.checks:
+            await discord.utils.maybe_coroutine(check, context)
 
 
-def test_target_must_be_in_same_channel_and_below_moderator(context):
-    context.target.top_role = context.author.top_role
-    with pytest.raises(commands.CheckFailure, match="inferior"):
-        validate_target(context, context.target, context.voice_channel)
-    context.target.top_role = 1
+@pytest.mark.parametrize(
+    ("command", "permission"),
+    [
+        (ModerationCog.silence, "mute_members"),
+        (ModerationCog.chato, "move_members"),
+    ],
+)
+async def test_commands_reject_callers_without_voice_moderation_permission(
+    context, command, permission
+):
+    author_permissions = discord.Permissions.all()
+    author_permissions.update(**{permission: False})
+    context.voice_channel.permissions_for.side_effect = lambda member: (
+        discord.Permissions.all() if member is context.me else author_permissions
+    )
+    with pytest.raises(commands.MissingPermissions) as error:
+        for check in command.checks:
+            await discord.utils.maybe_coroutine(check, context)
+    assert error.value.missing_permissions == [permission]
+
+
+def test_target_accepts_owner_administrator_and_higher_roles(context):
+    context.target.id = context.guild.owner_id
+    context.target.top_role = context.guild.me.top_role + 1
+    validate_target(context, context.target, context.voice_channel)
+
+
+def test_target_must_be_human_and_in_same_channel(context):
     context.target.voice.channel = None
     with pytest.raises(commands.CheckFailure, match="mesmo canal"):
         validate_target(context, context.target, context.voice_channel)
+    context.target.voice.channel = context.voice_channel
+    context.target.bot = True
+    with pytest.raises(commands.CheckFailure, match="bots"):
+        validate_target(context, context.target, context.voice_channel)
+
+
+async def test_silence_without_target_includes_owner_and_administrators(context):
+    context.guild.owner_id = context.author.id
+    context.author.top_role = context.guild.me.top_role + 2
+    context.target.top_role = context.guild.me.top_role + 1
+    music = SimpleNamespace(enqueue_local=AsyncMock())
+    cog = ModerationCog(SimpleNamespace(get_cog=lambda name: music))
+
+    await cog.silence.callback(cog, context)
+
+    effect = music.enqueue_local.await_args.kwargs["effect"]
+    async with effect():
+        assert context.author.voice.mute is True
+        assert context.target.voice.mute is True
+        assert context.guild.me.voice.mute is False
+    assert context.author.voice.mute is False
+    assert context.target.voice.mute is False
 
 
 async def test_vote_excludes_outsiders_and_bots_and_requires_quorum(context):

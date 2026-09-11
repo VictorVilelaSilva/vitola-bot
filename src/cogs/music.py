@@ -4,7 +4,12 @@ import discord
 from discord.ext import commands
 
 from src.services.player import AudioTrack, GuildPlayer
-from src.services.youtube import DownloadError, YouTubeDownloader, validate_youtube_url
+from src.services.youtube import (
+    DownloadError,
+    YouTubeDownloader,
+    validate_media_url,
+    validate_youtube_url,
+)
 from src.utils import audio_path, require_voice
 
 
@@ -92,6 +97,31 @@ class MusicCog(commands.Cog, name="Música"):
                 raise commands.BadArgument(str(error)) from error
             player.enqueue(AudioTrack(title=url, channel=channel, destination=ctx.channel, url=url))
             await ctx.send("Vídeo adicionado à fila.")
+
+    @commands.command(
+        aliases=["baixarvideo"],
+        help="Baixa um vídeo de uma plataforma compatível e envia neste canal.",
+    )
+    @commands.cooldown(1, 10, commands.BucketType.member)
+    @commands.max_concurrency(1, per=commands.BucketType.member, wait=False)
+    async def video(self, ctx, link: str):
+        try:
+            url = validate_media_url(link)
+        except DownloadError as error:
+            raise commands.BadArgument(str(error)) from error
+
+        discord_limit = getattr(ctx.guild, "filesize_limit", self.bot.settings.max_video_bytes)
+        max_bytes = min(discord_limit, self.bot.settings.max_video_bytes)
+        try:
+            async with ctx.typing():
+                async with self.downloader.prepare_video(url, max_bytes) as downloaded:
+                    attachment = discord.File(downloaded.path, filename=downloaded.path.name)
+                    try:
+                        await ctx.send(f"Vídeo baixado: {downloaded.title[:180]}", file=attachment)
+                    finally:
+                        attachment.close()
+        except DownloadError as error:
+            raise commands.CheckFailure(str(error)) from error
 
     @commands.command(
         name="showQueue",

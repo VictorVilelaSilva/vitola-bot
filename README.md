@@ -41,6 +41,20 @@ sudo apt update && sudo apt upgrade -y && sudo apt install ffmpeg -y
 
 ### 🧙‍♂️ Ritual de Invocação (Instalação)
 
+Com [mise](https://mise.jdx.dev/), a versão correta do Python e o ambiente
+virtual são selecionados automaticamente para este projeto:
+
+```bash
+mise install
+mise exec -- python -m pip install -r requirements.txt
+mise exec -- python main.py
+```
+
+Se o mise já estiver ativado no seu shell, os comandos `python` e `pip` usam a
+`.venv` do projeto sem precisar do prefixo `mise exec --`.
+
+#### Instalação manual
+
 1. **Crie um ambiente virtual** (porque misturar dependências é como misturar cachaça com energético - dá ruim):
 ```bash
 python -m venv venv
@@ -108,6 +122,7 @@ kubectl apply -f deploy/
 
 - `!tocar` - Toca o áudio do lobinho.
 - `!youtube` ou `!yt [link]` - Reproduz música do YouTube.
+- `!video [link]` ou `!baixarvideo [link]` - Baixa de plataformas aceitas pelo yt-dlp e envia no canal atual.
 - `!showQueue` - Mostra a fila de reprodução (para ver quanto tempo ainda falta para tocar sua música).
 - `!silence` - Quando o silêncio fala mais alto que palavras.
 
