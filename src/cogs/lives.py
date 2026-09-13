@@ -101,15 +101,17 @@ class LivesCog(commands.Cog, name="Lives"):
         self._last_notice[user_id] = now
         return True
 
-    def build_announcement(self, live: LiveStart) -> tuple[discord.Embed, discord.ui.View]:
+    def build_announcement(
+        self, name: str, avatar_url: str | None
+    ) -> tuple[discord.Embed, discord.ui.View]:
         embed = discord.Embed(
-            title=f"🔴 {discord.utils.escape_markdown(live.name)} está ao vivo!",
+            title=f"🔴 {discord.utils.escape_markdown(name)} está ao vivo!",
             description="Chega mais e assista junto no fckjj.",
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
         )
-        if live.avatar_url:
-            embed.set_thumbnail(url=live.avatar_url)
+        if avatar_url:
+            embed.set_thumbnail(url=avatar_url)
         # Botão de link não gera interação: o Discord abre a URL direto, então a
         # view não precisa ficar registrada nem sobreviver a reinícios do bot.
         view = discord.ui.View(timeout=None)
@@ -121,15 +123,42 @@ class LivesCog(commands.Cog, name="Lives"):
     async def announce(self, live: LiveStart):
         settings = self.bot.settings
         try:
-            embed, view = self.build_announcement(live)
             channel = self.bot.get_channel(settings.live_channel_id)
             if channel is None:
                 channel = await self.bot.fetch_channel(settings.live_channel_id)
+            name, avatar_url = await self.resolve_streamer(channel, live)
+            embed, view = self.build_announcement(name, avatar_url)
             await channel.send(
                 embed=embed, view=view, allowed_mentions=discord.AllowedMentions.none()
             )
         except discord.HTTPException:
             log.warning("Não foi possível avisar a live no canal %s", settings.live_channel_id)
+
+    async def resolve_streamer(self, channel, live: LiveStart) -> tuple[str, str | None]:
+        """Nome e avatar de quem abriu a live, buscados no Discord.
+
+        O track_published do LiveKit só traz sid e identity do participante
+        (TrackPublished em pkg/telemetry/events.go): nome e metadata nunca chegam
+        no webhook. A identity começa pelo discordId, que basta para consultar o
+        membro; o apelido no servidor tem prioridade sobre o nome global.
+        """
+        try:
+            user_id = int(live.user_id)
+        except ValueError:
+            return live.name, live.avatar_url
+        guild = getattr(channel, "guild", None)
+        user = guild.get_member(user_id) if guild is not None else None
+        if user is None and guild is not None:
+            try:
+                user = await guild.fetch_member(user_id)
+            except discord.HTTPException:
+                user = None
+        if user is None:
+            try:
+                user = await self.bot.fetch_user(user_id)
+            except discord.HTTPException:
+                return live.name, live.avatar_url
+        return user.display_name, user.display_avatar.url
 
 
 async def setup(bot):
