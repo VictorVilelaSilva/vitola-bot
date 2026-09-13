@@ -7,6 +7,7 @@ import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import discord
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 
@@ -14,6 +15,7 @@ from src.cogs.lives import WEBHOOK_PATH, LivesCog
 from src.config import Settings
 from src.services.livekit_webhook import WebhookError, screen_share_started, verify_webhook
 
+AVATAR = "https://cdn.discordapp.com/avatars/123456/abc.png"
 KEY = "webhook"
 SECRET = "segredo-de-teste-com-mais-de-32-caracteres"
 
@@ -37,12 +39,15 @@ def sign(body: bytes, *, key=KEY, secret=SECRET, alg="HS256", **overrides) -> st
     return f"{header}.{payload}.{b64url(signature.digest())}"
 
 
-def screen_share(identity="123456#ab12cd34", name="Fulano", source="SCREEN_SHARE") -> bytes:
+def screen_share(
+    identity="123456#ab12cd34", name="Fulano", source="SCREEN_SHARE", avatar=None
+) -> bytes:
+    metadata = json.dumps({"avatarUrl": avatar})
     return json.dumps(
         {
             "event": "track_published",
             "room": {"name": "geral"},
-            "participant": {"identity": identity, "name": name},
+            "participant": {"identity": identity, "name": name, "metadata": metadata},
             "track": {"sid": "TR_1", "type": "VIDEO", "source": source},
         }
     ).encode()
@@ -80,7 +85,13 @@ def test_rejects_unsigned_forged_expired_or_tampered_requests(authorization):
 
 def test_recognizes_only_screen_share_publications():
     live = screen_share_started(json.loads(screen_share()))
-    assert live == ("123456", "Fulano")
+    assert live == ("123456", "Fulano", None)
+    assert screen_share_started(json.loads(screen_share(avatar=AVATAR))).avatar_url == AVATAR
+    elsewhere = screen_share(avatar="https://exemplo.com/a.png")
+    assert screen_share_started(json.loads(elsewhere)).avatar_url is None
+    broken = json.loads(screen_share())
+    broken["participant"]["metadata"] = "{não é json"
+    assert screen_share_started(broken).avatar_url is None
     assert screen_share_started(json.loads(screen_share(source="CAMERA"))) is None
     assert screen_share_started(json.loads(screen_share(source="SCREEN_SHARE_AUDIO"))) is None
     left = json.loads(screen_share())
@@ -112,7 +123,7 @@ async def post(client, body, authorization):
 async def test_webhook_announces_live_once_per_cooldown_without_mentions():
     cog, channel = make_cog()
     async with TestClient(TestServer(cog.build_app())) as client:
-        body = screen_share(name="@everyone *vitola*")
+        body = screen_share(name="@everyone *vitola*", avatar=AVATAR)
         assert await post(client, body, sign(body)) == 200
         # Mesma pessoa em outra aba, logo após uma reconexão.
         again = screen_share(identity="123456#ffffffff")
@@ -122,12 +133,17 @@ async def test_webhook_announces_live_once_per_cooldown_without_mentions():
         await asyncio.gather(*cog._tasks)
 
     assert channel.send.await_count == 2
-    first = channel.send.await_args_list[0]
-    assert first.args[0] == (
-        "🔴 **@everyone \\*vitola\\*** começou uma live! Assista em https://fckjj.vitolas.com.br"
-    )
-    allowed = first.kwargs["allowed_mentions"]
+    first, second = (call.kwargs for call in channel.send.await_args_list)
+    assert first["embed"].title == "🔴 @everyone \\*vitola\\* está ao vivo!"
+    assert first["embed"].thumbnail.url == AVATAR
+    [button] = first["view"].children
+    assert button.style is discord.ButtonStyle.link
+    assert button.url == "https://fckjj.vitolas.com.br"
+    assert button.label == "Assistir live"
+    allowed = first["allowed_mentions"]
     assert not allowed.everyone and not allowed.users and not allowed.roles
+    assert second["embed"].title == "🔴 Beltrano está ao vivo!"
+    assert second["embed"].thumbnail.url is None
 
 
 async def test_webhook_rejects_bad_signature_and_ignores_cameras():

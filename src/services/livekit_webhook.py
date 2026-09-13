@@ -13,6 +13,10 @@ class WebhookError(Exception):
 class LiveStart(NamedTuple):
     user_id: str
     name: str
+    avatar_url: str | None = None
+
+
+DISCORD_CDN = "https://cdn.discordapp.com/"
 
 
 def _b64url_decode(segment: str) -> bytes:
@@ -99,4 +103,19 @@ def screen_share_started(event: dict) -> LiveStart | None:
     name = participant.get("name")
     if not isinstance(name, str) or not name.strip():
         name = "Alguém"
-    return LiveStart(user_id=identity.split("#", 1)[0], name=name.strip())
+    return LiveStart(
+        user_id=identity.split("#", 1)[0],
+        name=name.strip(),
+        avatar_url=_avatar_url(participant),
+    )
+
+
+def _avatar_url(participant: dict) -> str | None:
+    # O token-server grava {"avatarUrl": ...} em metadata. Só a CDN do Discord
+    # é aceita: o valor vira imagem no embed e não deve apontar para outro lugar.
+    try:
+        metadata = json.loads(participant.get("metadata") or "{}")
+    except (TypeError, ValueError):
+        return None
+    url = metadata.get("avatarUrl") if isinstance(metadata, dict) else None
+    return url if isinstance(url, str) and url.startswith(DISCORD_CDN) else None

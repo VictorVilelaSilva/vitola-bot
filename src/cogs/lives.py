@@ -6,7 +6,12 @@ import discord
 from aiohttp import web
 from discord.ext import commands
 
-from src.services.livekit_webhook import WebhookError, screen_share_started, verify_webhook
+from src.services.livekit_webhook import (
+    LiveStart,
+    WebhookError,
+    screen_share_started,
+    verify_webhook,
+)
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +86,7 @@ class LivesCog(commands.Cog, name="Lives"):
         if live is not None and self._should_notify(live.user_id):
             # Responde antes de falar com o Discord: se o envio demorar, o LiveKit
             # não fica esperando nem reenvia o mesmo evento.
-            task = asyncio.create_task(self.announce(live.name))
+            task = asyncio.create_task(self.announce(live))
             self._tasks.add(task)
             task.add_done_callback(self._tasks.discard)
         return web.Response(status=200)
@@ -96,17 +101,33 @@ class LivesCog(commands.Cog, name="Lives"):
         self._last_notice[user_id] = now
         return True
 
-    async def announce(self, name: str):
-        settings = self.bot.settings
-        content = (
-            f"🔴 **{discord.utils.escape_markdown(name)}** começou uma live! "
-            f"Assista em {settings.live_url}"
+    def build_announcement(self, live: LiveStart) -> tuple[discord.Embed, discord.ui.View]:
+        embed = discord.Embed(
+            title=f"🔴 {discord.utils.escape_markdown(live.name)} está ao vivo!",
+            description="Chega mais e assista junto no fckjj.",
+            color=discord.Color.red(),
+            timestamp=discord.utils.utcnow(),
         )
+        if live.avatar_url:
+            embed.set_thumbnail(url=live.avatar_url)
+        # Botão de link não gera interação: o Discord abre a URL direto, então a
+        # view não precisa ficar registrada nem sobreviver a reinícios do bot.
+        view = discord.ui.View(timeout=None)
+        view.add_item(
+            discord.ui.Button(label="Assistir live", emoji="📺", url=self.bot.settings.live_url)
+        )
+        return embed, view
+
+    async def announce(self, live: LiveStart):
+        settings = self.bot.settings
         try:
+            embed, view = self.build_announcement(live)
             channel = self.bot.get_channel(settings.live_channel_id)
             if channel is None:
                 channel = await self.bot.fetch_channel(settings.live_channel_id)
-            await channel.send(content, allowed_mentions=discord.AllowedMentions.none())
+            await channel.send(
+                embed=embed, view=view, allowed_mentions=discord.AllowedMentions.none()
+            )
         except discord.HTTPException:
             log.warning("Não foi possível avisar a live no canal %s", settings.live_channel_id)
 
