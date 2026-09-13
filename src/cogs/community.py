@@ -1,12 +1,8 @@
 import logging
-from types import SimpleNamespace
 from typing import ClassVar
 
 import discord
 from discord.ext import commands
-
-from src.services.player import AudioTrack
-from src.utils import audio_path
 
 log = logging.getLogger(__name__)
 
@@ -27,28 +23,32 @@ class CommunityCog(commands.Cog, name="Comunidade"):
             1, 30, commands.BucketType.member
         )
 
-    @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
-        if (
-            member.bot
-            or before.channel is not None
-            or not isinstance(after.channel, discord.VoiceChannel)
-        ):
-            return
-        filename = self.ENTRY_AUDIO.get(member.name)
-        music = self.bot.get_cog("Música")
-        if not filename or music is None:
-            return
-        # CooldownMapping's member bucket expects a message-like author/guild.
-        bucket = self._entry_cooldown.get_bucket(SimpleNamespace(author=member, guild=member.guild))
-        if bucket.update_rate_limit():
-            return
-        try:
-            music.get_player(member.guild).enqueue(
-                AudioTrack(title=filename, channel=after.channel, path=audio_path(filename)),
-            )
-        except commands.CheckFailure:
-            log.info("Áudio de entrada ignorado: canal ocupado, fila cheia ou arquivo ausente.")
+    # Ao descomentar, restaure os imports que o ruff removeu por falta de uso:
+    #   from types import SimpleNamespace
+    #   from src.services.player import AudioTrack
+    #   from src.utils import audio_path
+    # @commands.Cog.listener()
+    # async def on_voice_state_update(self, member, before, after):
+    #     if (
+    #         member.bot
+    #         or before.channel is not None
+    #         or not isinstance(after.channel, discord.VoiceChannel)
+    #     ):
+    #         return
+    #     filename = self.ENTRY_AUDIO.get(member.name)
+    #     music = self.bot.get_cog("Música")
+    #     if not filename or music is None:
+    #         return
+    #     # CooldownMapping's member bucket expects a message-like author/guild.
+    #     bucket = self._entry_cooldown.get_bucket(SimpleNamespace(author=member, guild=member.guild))
+    #     if bucket.update_rate_limit():
+    #         return
+    #     try:
+    #         music.get_player(member.guild).enqueue(
+    #             AudioTrack(title=filename, channel=after.channel, path=audio_path(filename)),
+    #         )
+    #     except commands.CheckFailure:
+    #         log.info("Áudio de entrada ignorado: canal ocupado, fila cheia ou arquivo ausente.")
 
     @commands.Cog.listener()
     async def on_message(self, message):

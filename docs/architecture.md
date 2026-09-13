@@ -20,6 +20,11 @@ com o Discord.
 - src/services/gemini.py: cliente assíncrono google-genai, modelo configurável e
   limite de consultas simultâneas.
 - src/cogs/community.py: áudios de entrada, reações e formatação de mensagens.
+- src/cogs/lives.py: servidor aiohttp que recebe os webhooks do LiveKit do fckjj e
+  avisa no canal LIVE_CHANNEL_ID quando alguém compartilha a tela, com intervalo
+  de LIVE_COOLDOWN segundos por pessoa. Desativado sem canal ou segredo.
+- src/services/livekit_webhook.py: verificação do JWT HS256 e do SHA-256 do corpo
+  enviados pelo LiveKit, e reconhecimento do evento de compartilhamento de tela.
 - src/utils.py: funções sem estado para caminhos, validação de voz e mensagens.
 
 Os antigos handlers em src/commands foram incorporados aos Cogs e serviços.
