@@ -20,7 +20,7 @@ class DiscordBot(commands.Bot):
         self.settings = settings
 
     async def setup_hook(self):
-        for extension in ("music", "moderation", "chat", "community"):
+        for extension in ("music", "moderation", "chat", "community", "lives"):
             await self.load_extension(f"src.cogs.{extension}")
 
     async def on_ready(self):

@@ -11,3 +11,8 @@ services:
     # docs/architecture.md); 60s dão folga para isso antes do SIGKILL.
     stop_grace_period: 60s
     restart: unless-stopped
+    # Webhook de lives: o LiveKit do fckjj roda na mesma VPS (network_mode: host)
+    # e entrega em 127.0.0.1:8026. Porta publicada pelo Docker fura o firewall
+    # da VPS, então o bind em 127.0.0.1 é o que mantém o endpoint fora da internet.
+    ports:
+      - "127.0.0.1:8026:8026"

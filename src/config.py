@@ -24,10 +24,18 @@ class Settings:
     chat_request_timeout: int = 45
     chat_max_turns: int = 20
     chat_max_sessions: int = 20
+    live_channel_id: int | None = None
+    live_url: str = "https://fckjj.vitolas.com.br"
+    livekit_webhook_key: str = "webhook"
+    livekit_webhook_secret: str = field(default="", repr=False)
+    live_webhook_host: str = "0.0.0.0"
+    live_webhook_port: int = 8026
+    live_cooldown: int = 600
 
     @classmethod
     def from_env(cls):
         channel_id = os.getenv("CODIGO_DISCORD_CHANNEL_ID_TOKEN", "").strip()
+        live_channel_id = os.getenv("LIVE_CHANNEL_ID", "").strip()
         return cls(
             discord_token=os.getenv("DISCORD_TOKEN", "").strip(),
             gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
@@ -42,4 +50,11 @@ class Settings:
             chat_request_timeout=positive_int("CHAT_REQUEST_TIMEOUT", 45),
             chat_max_turns=positive_int("CHAT_MAX_TURNS", 20),
             chat_max_sessions=positive_int("CHAT_MAX_SESSIONS", 20),
+            live_channel_id=int(live_channel_id) if live_channel_id else None,
+            live_url=os.getenv("LIVE_URL", cls.live_url).strip(),
+            livekit_webhook_key=os.getenv("LIVEKIT_WEBHOOK_KEY", cls.livekit_webhook_key).strip(),
+            livekit_webhook_secret=os.getenv("LIVEKIT_WEBHOOK_SECRET", "").strip(),
+            live_webhook_host=os.getenv("LIVE_WEBHOOK_HOST", cls.live_webhook_host).strip(),
+            live_webhook_port=positive_int("LIVE_WEBHOOK_PORT", 8026),
+            live_cooldown=positive_int("LIVE_COOLDOWN", 600),
         )
