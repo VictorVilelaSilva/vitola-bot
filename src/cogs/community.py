@@ -1,12 +1,8 @@
 import logging
-from types import SimpleNamespace
 from typing import ClassVar
 
 import discord
 from discord.ext import commands
-
-from src.services.player import AudioTrack
-from src.utils import audio_path
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +23,10 @@ class CommunityCog(commands.Cog, name="Comunidade"):
             1, 30, commands.BucketType.member
         )
 
+    # Ao descomentar, restaure os imports que o ruff removeu por falta de uso:
+    #   from types import SimpleNamespace
+    #   from src.services.player import AudioTrack
+    #   from src.utils import audio_path
     # @commands.Cog.listener()
     # async def on_voice_state_update(self, member, before, after):
     #     if (
