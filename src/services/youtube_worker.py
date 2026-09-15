@@ -21,10 +21,10 @@ def _limit_message(media_type: str) -> str:
     return f"{subject} excede o tamanho máximo permitido."
 
 
-def _estimated_size(format_info: dict, duration: float) -> int | None:
+def _estimated_size(format_info: dict, duration: float | None) -> int | None:
     if size := format_info.get("filesize") or format_info.get("filesize_approx"):
         return int(size)
-    if bitrate := format_info.get("tbr"):
+    if duration and (bitrate := format_info.get("tbr")):
         return int(float(bitrate) * 1000 / 8 * duration)
     return None
 
@@ -34,8 +34,18 @@ def _video_format_selector(max_bytes: int):
 
     def selector(context):
         formats = list(reversed(context.get("formats") or []))
-        duration = float(context.get("duration") or 0)
-        if not any(item.get("vcodec") != "none" for item in formats):
+        duration = context.get("duration")
+        duration = float(duration) if duration else None
+
+        def is_combined_video(item):
+            vcodec, acodec = item.get("vcodec"), item.get("acodec")
+            known_streams = vcodec not in {None, "none"} and acodec not in {None, "none"}
+            unknown_mp4 = vcodec is None and acodec is None and item.get("ext") == "mp4"
+            return known_streams or unknown_mp4
+
+        if not any(
+            item.get("vcodec") not in {None, "none"} or is_combined_video(item) for item in formats
+        ):
             raise DownloadError(GENERIC_VIDEO_DOWNLOAD_ERROR)
         videos = [
             item
@@ -85,12 +95,7 @@ def _video_format_selector(max_bytes: int):
 
         for item in formats:
             size = _estimated_size(item, duration)
-            if (
-                item.get("vcodec") != "none"
-                and item.get("acodec") != "none"
-                and size is not None
-                and size <= budget
-            ):
+            if is_combined_video(item) and (size is None or size <= budget):
                 yield item
                 return
         raise DownloadError(_limit_message("video"))
@@ -120,7 +125,12 @@ def download(
         if incomplete:
             return None
         duration = info.get("duration")
-        if info.get("is_live") or not duration or duration > max_seconds:
+        live_status = info.get("live_status")
+        if (
+            info.get("is_live")
+            or live_status in {"is_live", "is_upcoming"}
+            or (duration and duration > max_seconds)
+        ):
             raise DownloadError(
                 f"Escolha um vídeo de até {max_seconds // 60} minutos; lives não são aceitas."
             )
