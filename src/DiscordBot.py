@@ -23,6 +23,20 @@ class DiscordBot(commands.Bot):
         for extension in ("music", "moderation", "chat", "community", "lives"):
             await self.load_extension(f"src.cogs.{extension}")
 
+        # application_id is populated by discord.py during a real login. Keeping
+        # this guard lets the Cogs be loaded by the offline test suite as well.
+        if self.application_id is None:
+            log.info("Sincronização dos comandos / ignorada fora de uma conexão com o Discord.")
+            return
+        try:
+            synced = await self.tree.sync()
+        except discord.HTTPException:
+            # Prefix commands remain usable even if Discord temporarily refuses
+            # the application-command registration.
+            log.exception("Não foi possível sincronizar os comandos / com o Discord.")
+        else:
+            log.info("%s comandos / sincronizados com o Discord.", len(synced))
+
     async def on_ready(self):
         log.info("Vitola bot online: %s", self.user)
 

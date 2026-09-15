@@ -2,7 +2,8 @@
 
 O projeto usa Python 3.12 e discord.py. A classe DiscordBot herda de commands.Bot e
 carrega as extensões no setup_hook, dentro do mesmo event loop usado pela conexão
-com o Discord.
+com o Discord. Os comandos dos Cogs são híbridos: continuam aceitando o prefixo
+`!` e são sincronizados globalmente como application commands `/` após o login.
 
 ## Responsabilidades
 
