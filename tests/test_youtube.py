@@ -157,7 +157,7 @@ async def test_download_error_is_reported_without_exiting_bot(monkeypatch):
     assert not processes[0].directory.exists()
 
 
-def make_ydl(monkeypatch, *, seconds=60, size=100, ext="webm"):
+def make_ydl(monkeypatch, *, seconds=60, size=100, ext="webm", is_live=False):
     state = {}
 
     class FakeYoutubeDL:
@@ -172,7 +172,7 @@ def make_ydl(monkeypatch, *, seconds=60, size=100, ext="webm"):
 
         def extract_info(self, url, *, download):
             state.update(url=url, download=download)
-            info = {"duration": seconds, "is_live": False, "title": "Video"}
+            info = {"duration": seconds, "is_live": is_live, "title": "Video"}
             state["options"]["match_filter"](info, incomplete=False)
             state["options"]["progress_hooks"][0]({"downloaded_bytes": size, "total_bytes": size})
             output = Path(state["options"]["outtmpl"].replace("%(ext)s", ext))
@@ -184,12 +184,18 @@ def make_ydl(monkeypatch, *, seconds=60, size=100, ext="webm"):
     return state, factory
 
 
-@pytest.mark.parametrize("seconds,size", [(1000, 100), (0, 100), (60, 10000)])
+@pytest.mark.parametrize("seconds,size", [(1000, 100), (60, 10000)])
 def test_worker_checks_duration_and_size_before_download(monkeypatch, tmp_path, seconds, size):
     state, _ = make_ydl(monkeypatch, seconds=seconds, size=size)
     with pytest.raises(DownloadError):
         download("https://youtu.be/abcdefghijk", tmp_path, 900, 1000)
     assert not list(tmp_path.glob("audio.*"))
+
+
+def test_worker_rejects_livestream(monkeypatch, tmp_path):
+    make_ydl(monkeypatch, is_live=True)
+    with pytest.raises(DownloadError, match="lives"):
+        download("https://youtu.be/abcdefghijk", tmp_path, 900, 1000)
 
 
 def test_worker_keeps_real_container_and_stable_metadata(monkeypatch, tmp_path):
@@ -241,6 +247,24 @@ def test_video_selector_combines_compatible_streams_inside_limit():
     selected = list(_video_format_selector(1000)({"formats": formats, "duration": 60}))
     assert selected[0]["format_id"] == "video+audio"
     assert selected[0]["ext"] == "mp4"
+
+
+def test_video_selector_accepts_direct_mp4_with_unknown_metadata():
+    direct = {
+        "format_id": "direct",
+        "ext": "mp4",
+        "vcodec": None,
+        "acodec": None,
+        "protocol": "https",
+    }
+    selected = list(_video_format_selector(1000)({"formats": [direct], "duration": None}))
+    assert selected == [direct]
+
+
+def test_worker_allows_unknown_duration_with_size_and_timeout_limits(monkeypatch, tmp_path):
+    make_ydl(monkeypatch, seconds=None, ext="mp4")
+    result = download("https://example.com/video", tmp_path, 900, 1000, "video")
+    assert result["filename"] == "video.mp4"
 
 
 async def test_prepare_video_passes_discord_limit_and_cleans_file(monkeypatch):
