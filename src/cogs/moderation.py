@@ -72,7 +72,6 @@ class VoteView(discord.ui.View):
         required = max(2, len(self.eligible_ids) // 2 + 1)
         return yes, no, required
 
-
 class ModerationCog(commands.Cog, name="Moderação"):
     def __init__(self, bot):
         self.bot = bot
