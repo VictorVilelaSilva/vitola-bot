@@ -25,7 +25,8 @@ O Vitola Bot é como aquele amigo que sempre anima a festa - só que ele nunca p
 ### Pré-requisitos (porque nem tudo na vida é fácil)
 
 Use Python 3.12. No Discord Developer Portal, habilite **Message Content Intent**
-para os comandos com prefixo `!`. Convide o bot com as permissões de ver canais,
+para manter os comandos antigos com prefixo `!`. Os comandos `/` não dependem
+desse intent. Convide o bot com as permissões de ver canais,
 enviar mensagens, inserir links, adicionar reações, ler histórico, conectar e falar.
 Para `!silence`, conceda **Silenciar membros**; para `!chato`, **Mover membros**.
 A formatação automática também precisa de **Gerenciar mensagens** no canal configurado.
@@ -120,11 +121,11 @@ kubectl apply -f deploy/
 
 ## 👾 Comandos (Ou "Como Fazer o Bot Obedecer")
 
-- `!tocar` - Toca o áudio do lobinho.
-- `!youtube` ou `!yt [link]` - Reproduz música do YouTube.
-- `!video [link]` ou `!baixarvideo [link]` - Baixa de plataformas aceitas pelo yt-dlp e envia no canal atual.
-- `!showQueue` - Mostra a fila de reprodução (para ver quanto tempo ainda falta para tocar sua música).
-- `!silence` - Quando o silêncio fala mais alto que palavras.
+- `/tocar` ou `!tocar` - Toca o áudio do lobinho.
+- `/youtube link:<url>` ou `!yt <url>` - Reproduz música do YouTube.
+- `/video link:<url>` ou `!video <url>` - Baixa de plataformas aceitas pelo yt-dlp e envia no canal atual.
+- `/fila` ou `!fila` - Mostra a fila de reprodução.
+- `/silence` ou `!silence` - Quando o silêncio fala mais alto que palavras.
 
 ## Estrutura e desenvolvimento
 
@@ -142,8 +143,9 @@ python -m ruff check .
 python -m ruff format --check .
 ```
 
-`!help` ou `!comandos` mostra os comandos. Use `!yt next` para pular, `!yt quit`
-para limpar a fila e sair, e `!fim` para cancelar sua conversa com a IA.
+`/comandos`, `!help` ou `!comandos` mostra os comandos. Use `/youtube link:next`
+para pular, `/youtube link:quit` para limpar a fila, ou as versões antigas
+`!yt next` e `!yt quit`. Use `/fim` ou `!fim` para cancelar sua conversa com a IA.
 `!silence` exige permissão de silenciar; `!chato` exige permissão de mover membros.
 
 ## ⚠️ Avisos Importantes

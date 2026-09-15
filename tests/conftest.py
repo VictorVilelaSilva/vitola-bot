@@ -88,6 +88,7 @@ def context():
         me=guild.me,
         channel=destination,
         send=AsyncMock(),
+        defer=AsyncMock(),
         send_help=AsyncMock(),
         permissions=discord.Permissions.all(),
         bot_permissions=discord.Permissions.all(),

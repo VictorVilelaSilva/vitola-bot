@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from src.utils import require_voice
@@ -120,9 +121,10 @@ class ModerationCog(commands.Cog, name="Moderação"):
                             ctx.guild.id,
                         )
 
-    @commands.command(
+    @commands.hybrid_command(
         help="Silencia temporariamente um membro ou os participantes elegíveis da sua chamada."
     )
+    @app_commands.describe(member="Membro; deixe vazio para silenciar toda a chamada")
     @commands.guild_only()
     @require_voice_check("mute_members")
     @commands.cooldown(1, 15, commands.BucketType.guild)
@@ -150,9 +152,10 @@ class ModerationCog(commands.Cog, name="Moderação"):
             effect=lambda: self.temporary_mute(ctx, targets, channel),
         )
 
-    @commands.command(
+    @commands.hybrid_command(
         help="Abre votação de 15s para desconectar um membro da chamada. Exige Mover membros."
     )
+    @app_commands.describe(member="Membro que será colocado em votação")
     @commands.guild_only()
     @require_voice_check("move_members")
     @commands.cooldown(1, 30, commands.BucketType.guild)

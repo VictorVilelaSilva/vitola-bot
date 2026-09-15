@@ -34,6 +34,39 @@ async def test_startup_loads_cogs_and_preserves_command_names_without_login():
             assert bot.get_command(name) is not None
         assert bot.get_command("silence").cog is bot.get_cog("Moderação")
         assert bot.get_command("gpt").clean_params["message"].kind.name == "KEYWORD_ONLY"
+        assert all(
+            isinstance(bot.get_command(name), commands.HybridCommand)
+            for name in (
+                "tocar",
+                "ripita",
+                "autismo",
+                "bahiano",
+                "rj",
+                "youtube",
+                "video",
+                "fila",
+                "silence",
+                "chato",
+                "gpt",
+                "fim",
+                "comandos",
+            )
+        )
+        assert {command.name for command in bot.tree.get_commands()} == {
+            "tocar",
+            "ripita",
+            "autismo",
+            "bahiano",
+            "rj",
+            "youtube",
+            "video",
+            "fila",
+            "silence",
+            "chato",
+            "gpt",
+            "fim",
+            "comandos",
+        }
         music = bot.get_cog("Música")
         assert music.get_player(SimpleNamespace(id=1)) is not music.get_player(
             SimpleNamespace(id=2)

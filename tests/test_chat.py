@@ -132,11 +132,12 @@ async def test_commands_sends_styled_embed_with_video_command(context):
     embed = context.send.await_args.kwargs["embed"]
     assert embed.title == "🤖 Central de comandos do Vitola"
     assert embed.color.value != 0
+    assert "Digite `/`" in embed.description
     help_text = "\n".join(field.value for field in embed.fields)
-    assert "!video <link>" in help_text
-    assert "!baixarvideo <link>" in help_text
-    assert "!yt <link>" in help_text
-    assert embed.footer.text == "Use !help <comando> para ver mais detalhes."
+    assert "/video link:<url>" in help_text
+    assert "!baixarvideo <url>" in help_text
+    assert "/youtube link:<url>" in help_text
+    assert embed.footer.text == "Use /comandos ou !help <comando> para ver mais detalhes."
 
 
 async def test_gemini_service_uses_async_client_and_configured_model(monkeypatch):

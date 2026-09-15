@@ -3,6 +3,7 @@ import logging
 from contextlib import suppress
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from src.services.gemini import GeminiService
@@ -36,9 +37,11 @@ class ChatCog(commands.Cog, name="Conversa"):
             and not message.content.startswith("!")
         )
 
-    @commands.command(help="Conversa com a IA neste canal. Use fim ou !fim para encerrar.")
+    @commands.hybrid_command(help="Conversa com a IA neste canal. Use fim ou !fim para encerrar.")
+    @app_commands.describe(message="Mensagem inicial para a IA (opcional)")
     @commands.cooldown(1, 5, commands.BucketType.member)
     async def gpt(self, ctx, *, message: str = ""):
+        await ctx.defer()
         key = self.session_key(ctx)
         if message.strip().lower() == "fim":
             await self._end_session(ctx)
@@ -105,7 +108,7 @@ class ChatCog(commands.Cog, name="Conversa"):
             if self.sessions.get(key) is asyncio.current_task():
                 self.sessions.pop(key, None)
 
-    @commands.command(
+    @commands.hybrid_command(
         name="fim",
         help="Encerra sua conversa com a IA neste canal, inclusive durante uma consulta.",
     )
@@ -124,53 +127,56 @@ class ChatCog(commands.Cog, name="Conversa"):
             "Conversa encerrada." if task else "Você não tem uma conversa aberta neste canal."
         )
 
-    @commands.command(help="Mostra os comandos disponíveis.")
+    @commands.hybrid_command(help="Mostra os comandos disponíveis.")
     async def comandos(self, ctx):
         embed = discord.Embed(
             title="🤖 Central de comandos do Vitola",
-            description="Escolha uma categoria e use o prefixo `!` para chamar o bot.",
+            description=(
+                "Digite `/` para escolher um comando na lista. "
+                "Os comandos antigos com `!` continuam funcionando."
+            ),
             color=discord.Color.red(),
         )
         embed.add_field(
             name="🎵 Música",
             value=(
-                "`!yt <link>` — adiciona o áudio do YouTube à fila\n"
-                "`!yt next` — pula o áudio atual\n"
-                "`!yt quit` — limpa a fila e desconecta\n"
-                "`!fila` — mostra a fila de reprodução"
+                "`/youtube link:<url>` • `!yt <url>` — adiciona à fila\n"
+                "`/youtube link:next` • `!yt next` — pula o áudio atual\n"
+                "`/youtube link:quit` • `!yt quit` — limpa a fila\n"
+                "`/fila` • `!fila` — mostra a fila de reprodução"
             ),
             inline=False,
         )
         embed.add_field(
             name="🎬 Download",
             value=(
-                "`!video <link>` — baixa vídeos de plataformas compatíveis\n"
-                "Alias: `!baixarvideo <link>` • limite padrão de 10 MiB"
+                "`/video link:<url>` • `!video <url>` — baixa e envia o vídeo\n"
+                "Alias antigo: `!baixarvideo <url>` • limite padrão de 10 MiB"
             ),
             inline=False,
         )
         embed.add_field(
             name="🔊 Áudios rápidos",
-            value="`!tocar` • `!ripita` • `!autismo` • `!bahiano` • `!rj`",
+            value="`/tocar` • `/ripita` • `/autismo` • `/bahiano` • `/rj`",
             inline=False,
         )
         embed.add_field(
             name="🛡️ Moderação",
             value=(
-                "`!silence [@membro]` — silencia um membro ou toda a chamada\n"
-                "`!chato @membro` — abre votação para remover da chamada"
+                "`/silence [member]` • `!silence [@membro]` — silencia um ou todos\n"
+                "`/chato member` • `!chato @membro` — abre votação para remover"
             ),
             inline=False,
         )
         embed.add_field(
             name="🧠 Inteligência artificial",
             value=(
-                "`!gpt [mensagem]` — inicia uma conversa neste canal\n"
-                "`!fim` — encerra sua conversa atual"
+                "`/gpt [message]` • `!gpt [mensagem]` — inicia uma conversa\n"
+                "`/fim` • `!fim` — encerra sua conversa atual"
             ),
             inline=False,
         )
-        embed.set_footer(text="Use !help <comando> para ver mais detalhes.")
+        embed.set_footer(text="Use /comandos ou !help <comando> para ver mais detalhes.")
         await ctx.send(embed=embed)
 
     async def cog_unload(self):
