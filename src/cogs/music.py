@@ -108,6 +108,7 @@ class MusicCog(commands.Cog, name="Música"):
     @commands.cooldown(1, 10, commands.BucketType.member)
     @commands.max_concurrency(1, per=commands.BucketType.member, wait=False)
     async def video(self, ctx, link: str):
+        await ctx.defer()
         try:
             url = validate_media_url(link)
         except DownloadError as error:
@@ -116,13 +117,37 @@ class MusicCog(commands.Cog, name="Música"):
         discord_limit = getattr(ctx.guild, "filesize_limit", self.bot.settings.max_video_bytes)
         max_bytes = min(discord_limit, self.bot.settings.max_video_bytes)
         try:
-            async with ctx.typing():
-                async with self.downloader.prepare_video(url, max_bytes) as downloaded:
-                    attachment = discord.File(downloaded.path, filename=downloaded.path.name)
-                    try:
-                        await ctx.send(f"Vídeo baixado: {downloaded.title[:180]}", file=attachment)
-                    finally:
-                        attachment.close()
+            async with self.downloader.prepare_video(url, max_bytes) as downloaded:
+                attachment = discord.File(downloaded.path, filename=downloaded.path.name)
+                try:
+                    await ctx.send(f"Vídeo baixado: {downloaded.title[:180]}", file=attachment)
+                finally:
+                    attachment.close()
+        except DownloadError as error:
+            raise commands.CheckFailure(str(error)) from error
+
+    @commands.hybrid_command(
+        help="Extrai o áudio de um vídeo compatível e envia em MP3.",
+    )
+    @app_commands.describe(link="Link do vídeo em uma plataforma compatível")
+    @commands.cooldown(1, 10, commands.BucketType.member)
+    @commands.max_concurrency(1, per=commands.BucketType.member, wait=False)
+    async def mp3(self, ctx, link: str):
+        await ctx.defer()
+        try:
+            url = validate_media_url(link)
+        except DownloadError as error:
+            raise commands.BadArgument(str(error)) from error
+
+        discord_limit = getattr(ctx.guild, "filesize_limit", self.bot.settings.max_download_bytes)
+        max_bytes = min(discord_limit, self.bot.settings.max_download_bytes)
+        try:
+            async with self.downloader.prepare_mp3(url, max_bytes) as downloaded:
+                attachment = discord.File(downloaded.path, filename="audio.mp3")
+                try:
+                    await ctx.send(f"MP3 extraído: {downloaded.title[:180]}", file=attachment)
+                finally:
+                    attachment.close()
         except DownloadError as error:
             raise commands.CheckFailure(str(error)) from error
 

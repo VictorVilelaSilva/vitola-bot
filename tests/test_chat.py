@@ -135,6 +135,7 @@ async def test_commands_sends_styled_embed_with_video_command(context):
     assert "Digite `/`" in embed.description
     help_text = "\n".join(field.value for field in embed.fields)
     assert "/video link:<url>" in help_text
+    assert "/mp3 link:<url>" in help_text
     assert "!baixarvideo <url>" in help_text
     assert "/youtube link:<url>" in help_text
     assert embed.footer.text == "Use /comandos ou !help <comando> para ver mais detalhes."

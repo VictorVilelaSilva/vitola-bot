@@ -55,6 +55,11 @@ erro padrão. O limite padrão é 10 MiB e nunca ultrapassa o limite de anexos i
 pelo servidor Discord. O yt-dlp usa Deno e yt-dlp-ejs para resolver os desafios
 JavaScript atuais do YouTube.
 
+!mp3 aceita as mesmas plataformas de !video, baixa a melhor faixa de áudio
+disponível e usa FFmpeg para convertê-la em MP3. A taxa de bits é ajustada ao
+limite de anexos e à duração máxima configurada; o arquivo temporário é removido
+depois do envio.
+
 ## Moderação
 
 !silence exige Silenciar membros e !chato exige Mover membros, tanto para o autor

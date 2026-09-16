@@ -80,8 +80,16 @@ class YouTubeDownloader:
             yield DownloadedVideo(path=downloaded.path, title=downloaded.title)
 
     @asynccontextmanager
+    async def prepare_mp3(self, url: str, max_bytes: int):
+        limit = min(max_bytes, self.settings.max_download_bytes)
+        async with self._prepare(url, "mp3", limit) as downloaded:
+            yield DownloadedAudio(path=downloaded.path, title=downloaded.title)
+
+    @asynccontextmanager
     async def _prepare(self, url: str, media_type: str, max_bytes: int):
-        url = validate_media_url(url) if media_type == "video" else validate_youtube_url(url)
+        url = (
+            validate_media_url(url) if media_type in {"video", "mp3"} else validate_youtube_url(url)
+        )
         with TemporaryDirectory(prefix=f"vitola-{media_type}-") as directory:
             async with self._slots:
                 process = await asyncio.create_subprocess_exec(
