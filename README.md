@@ -124,6 +124,7 @@ kubectl apply -f deploy/
 - `/tocar` ou `!tocar` - Toca o áudio do lobinho.
 - `/youtube link:<url>` ou `!yt <url>` - Reproduz música do YouTube.
 - `/video link:<url>` ou `!video <url>` - Baixa de plataformas aceitas pelo yt-dlp e envia no canal atual.
+- `/mp3 link:<url>` ou `!mp3 <url>` - Extrai o áudio de um vídeo e envia em MP3.
 - `/fila` ou `!fila` - Mostra a fila de reprodução.
 - `/silence` ou `!silence` - Quando o silêncio fala mais alto que palavras.
 

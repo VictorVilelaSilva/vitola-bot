@@ -151,6 +151,7 @@ class ChatCog(commands.Cog, name="Conversa"):
             name="🎬 Download",
             value=(
                 "`/video link:<url>` • `!video <url>` — baixa e envia o vídeo\n"
+                "`/mp3 link:<url>` • `!mp3 <url>` — extrai e envia o áudio\n"
                 "Alias antigo: `!baixarvideo <url>` • limite padrão de 10 MiB"
             ),
             inline=False,

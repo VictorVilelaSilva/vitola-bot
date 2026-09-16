@@ -10,6 +10,7 @@ import pytest
 from src.cogs.music import MusicCog
 from src.config import Settings
 from src.services.youtube import (
+    DownloadedAudio,
     DownloadedVideo,
     DownloadError,
     YouTubeDownloader,
@@ -76,7 +77,12 @@ class FakeProcess:
                 result = {"error": error}
                 self.returncode = 1
             else:
-                filename = "video.mp4" if media_type == "video" else "audio.webm"
+                if media_type == "video":
+                    filename = "video.mp4"
+                elif media_type == "mp3":
+                    filename = "audio.mp3"
+                else:
+                    filename = "audio.webm"
                 (self.directory / filename).write_bytes(b"audio")
                 result = {"filename": filename, "title": "Video"}
                 self.returncode = 0
@@ -175,7 +181,8 @@ def make_ydl(monkeypatch, *, seconds=60, size=100, ext="webm", is_live=False):
             info = {"duration": seconds, "is_live": is_live, "title": "Video"}
             state["options"]["match_filter"](info, incomplete=False)
             state["options"]["progress_hooks"][0]({"downloaded_bytes": size, "total_bytes": size})
-            output = Path(state["options"]["outtmpl"].replace("%(ext)s", ext))
+            output_ext = "mp3" if state["options"].get("postprocessors") else ext
+            output = Path(state["options"]["outtmpl"].replace("%(ext)s", output_ext))
             output.write_bytes(b"x" * size)
             return info
 
@@ -223,6 +230,24 @@ def test_worker_downloads_video_with_audio_and_prefers_mp4(monkeypatch, tmp_path
     assert state["url"] == tiktok_url
     assert callable(state["options"]["format"])
     assert state["options"]["merge_output_format"] == "mp4"
+
+
+def test_worker_extracts_mp3_from_any_supported_platform(monkeypatch, tmp_path):
+    state, _ = make_ydl(monkeypatch)
+    tiktok_url = "https://www.tiktok.com/@user/video/123456789"
+
+    result = download(tiktok_url, tmp_path, 900, 10 * 1024 * 1024, "mp3")
+
+    assert result == {"filename": "audio.mp3", "title": "Video"}
+    assert state["url"] == tiktok_url
+    assert state["options"]["format"].startswith("bestaudio")
+    assert state["options"]["postprocessors"] == [
+        {
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "80",
+        }
+    ]
 
 
 def test_video_selector_combines_compatible_streams_inside_limit():
@@ -284,6 +309,24 @@ async def test_prepare_video_passes_discord_limit_and_cleans_file(monkeypatch):
     assert not spawned[0][1].directory.exists()
 
 
+async def test_prepare_mp3_accepts_generic_link_and_cleans_file(monkeypatch):
+    spawned = []
+
+    async def spawn(*args, **kwargs):
+        process = FakeProcess(args[4], finish=True, media_type=args[7])
+        spawned.append((args, process))
+        return process
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", spawn)
+    downloader = YouTubeDownloader(Settings(max_download_bytes=500))
+    link = "https://www.instagram.com/reel/example/"
+    async with downloader.prepare_mp3(link, 300) as audio:
+        assert audio.path.name == "audio.mp3"
+        assert audio.path.is_file()
+    assert spawned[0][0][6:] == ("300", "mp3")
+    assert not spawned[0][1].directory.exists()
+
+
 async def test_video_command_sends_attachment_in_request_channel(tmp_path):
     path = tmp_path / "video.mp4"
     path.write_bytes(b"video")
@@ -306,6 +349,7 @@ async def test_video_command_sends_attachment_in_request_channel(tmp_path):
     cog.downloader = FakeDownloader()
     ctx = SimpleNamespace(
         guild=SimpleNamespace(filesize_limit=5),
+        defer=AsyncMock(),
         typing=typing,
         send=AsyncMock(),
     )
@@ -313,8 +357,39 @@ async def test_video_command_sends_attachment_in_request_channel(tmp_path):
     await cog.video.callback(cog, ctx, "https://youtu.be/abcdefghijk")
 
     assert cog.downloader.arguments == ("https://youtu.be/abcdefghijk", 5)
+    ctx.defer.assert_awaited_once()
     assert ctx.send.await_args.args == ("Vídeo baixado: Meu vídeo",)
     assert ctx.send.await_args.kwargs["file"].filename == "video.mp4"
+
+
+async def test_mp3_command_sends_attachment_in_request_channel(tmp_path):
+    path = tmp_path / "audio.mp3"
+    path.write_bytes(b"mp3")
+
+    class FakeDownloader:
+        def __init__(self):
+            self.arguments = None
+
+        @asynccontextmanager
+        async def prepare_mp3(self, url, max_bytes):
+            self.arguments = (url, max_bytes)
+            yield DownloadedAudio(path=path, title="Meu áudio")
+
+    bot = SimpleNamespace(settings=Settings(max_download_bytes=10))
+    cog = MusicCog(bot)
+    cog.downloader = FakeDownloader()
+    ctx = SimpleNamespace(
+        guild=SimpleNamespace(filesize_limit=5),
+        defer=AsyncMock(),
+        send=AsyncMock(),
+    )
+
+    await cog.mp3.callback(cog, ctx, "https://youtu.be/abcdefghijk")
+
+    assert cog.downloader.arguments == ("https://youtu.be/abcdefghijk", 5)
+    ctx.defer.assert_awaited_once()
+    assert ctx.send.await_args.args == ("MP3 extraído: Meu áudio",)
+    assert ctx.send.await_args.kwargs["file"].filename == "audio.mp3"
 
 
 async def test_download_slots_are_released_before_playback_finishes(monkeypatch):

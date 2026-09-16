@@ -104,11 +104,19 @@ def _video_format_selector(max_bytes: int):
 
 
 def _format_selector(media_type: str, max_bytes: int):
-    if media_type == "audio":
+    if media_type in {"audio", "mp3"}:
         return (
             f"bestaudio[filesize<={max_bytes}]/bestaudio[filesize_approx<={max_bytes}]/worstaudio"
         )
     return _video_format_selector(max_bytes)
+
+
+def _mp3_bitrate(max_bytes: int, max_seconds: int) -> str:
+    # Leave 10% for the container and metadata. Choosing from common MP3
+    # bitrates keeps a maximum-duration file within Discord's attachment limit.
+    ceiling = max_bytes * 8 * 0.9 / max_seconds / 1000
+    choices = (32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192)
+    return str(max((quality for quality in choices if quality <= ceiling), default=32))
 
 
 def download(
@@ -118,7 +126,7 @@ def download(
     max_bytes: int,
     media_type: str = "audio",
 ) -> dict:
-    if media_type not in {"audio", "video"}:
+    if media_type not in {"audio", "video", "mp3"}:
         raise DownloadError("Tipo de download inválido.")
 
     def check_video(info, *, incomplete):
@@ -146,7 +154,8 @@ def download(
         if sum(downloaded_files.values()) > max_bytes:
             raise DownloadError(_limit_message(media_type))
 
-    output_template = str(directory / f"{media_type}.%(ext)s")
+    output_stem = "video" if media_type == "video" else "audio"
+    output_template = str(directory / f"{output_stem}.%(ext)s")
     options = {
         "format": _format_selector(media_type, max_bytes),
         "outtmpl": output_template,
@@ -162,10 +171,20 @@ def download(
         "noprogress": True,
         "no_warnings": True,
     }
+    if media_type == "mp3":
+        options["postprocessors"] = [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": _mp3_bitrate(max_bytes, max_seconds),
+            }
+        ]
     try:
         with YoutubeDL(options) as ydl:
             validated_url = (
-                validate_media_url(url) if media_type == "video" else validate_youtube_url(url)
+                validate_media_url(url)
+                if media_type in {"video", "mp3"}
+                else validate_youtube_url(url)
             )
             info = ydl.extract_info(validated_url, download=True)
     except DownloadError:
@@ -178,7 +197,7 @@ def download(
 
     candidates = [
         path
-        for path in directory.glob(f"{media_type}.*")
+        for path in directory.glob(f"{output_stem}.*")
         if path.is_file() and not path.name.endswith((".part", ".ytdl"))
     ]
     if not info or len(candidates) != 1 or candidates[0].stat().st_size > max_bytes:
